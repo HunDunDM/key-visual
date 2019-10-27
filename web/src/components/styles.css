@@ -1,0 +1,98 @@
+.main-screen {
+    width: 100vw;
+    height: 100vh;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.padding {
+    padding: 5px;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: stretch;
+}
+.flex-col {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: stretch;
+    overflow-y: auto;
+}
+.flex-center {
+    justify-content: center;
+    align-items: center;
+}
+.flex-align-end {
+    justify-content: center;
+    align-items: flex-end;
+}
+.flex-justify-start {
+    justify-content: flex-start;
+    align-items: center;
+}
+.flex-justify-end {
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.flex-single {
+    flex: 1;
+}
+.flex-nowrap {
+    flex: auto;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.flex-auto {
+    flex: auto;
+}
+.flex-none {
+    flex: none;
+}
+
+.non-row-head {
+    margin-left: 20px;
+}
+
+/* key visual */
+.visual-background {
+    background: rgb(33, 33, 33);
+}
+.follow-outer {
+    width: 300px;
+    height: 100%;
+    background: #C0C0C0;
+    overflow: scroll;
+    padding-top: 14px;
+}
+.follow-inner {
+    width: 300px;
+    overflow-x: hidden;
+}
+.stat-unit {
+    border-right: 1px solid white;
+    border-bottom: 1px solid white;
+}
+.colors {
+    width: 120px;
+}
+.labels {
+    width: 15px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+.stat-info {
+    padding-right: 1px;
+    padding-bottom: 1px;
+}
