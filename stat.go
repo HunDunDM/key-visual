@@ -293,7 +293,7 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 			rangeTimePlane.Axes[i] = tempAxis.Range(startKey, endKey)
 		}
 	}
-	newMatrix := rangeTimePlane.Pixel(50, 120)
+	newMatrix := rangeTimePlane.Pixel(50, 80)
 	return RangeTableID(newMatrix)
 }
 
