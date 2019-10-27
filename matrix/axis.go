@@ -36,12 +36,12 @@ func (axis *DiscreteAxis) Effect(threshold uint64) uint {
 	// 相邻的且value相等的“线段”可以合并
 	var num uint = 0
 	isLastLess := false      //标志上一个line的value是否小于threshold
-	var lastValue int64 = -1 //上一个线段的value
+	var lastIndex int64 = -1 //上一个线段的索引
 	for _, line := range axis.Lines {
 		if line.Useless(threshold) {
 			isLastLess = true
 		} else { //遇到大于阈值的线段
-			if lastValue == -1 || line.GetThreshold() != uint64(lastValue) {
+			if lastIndex == -1 || !line.Value.Equal(axis.Lines[lastIndex].Value) {
 				num++
 			}
 			if isLastLess {
@@ -49,7 +49,7 @@ func (axis *DiscreteAxis) Effect(threshold uint64) uint {
 				num++
 			}
 		}
-		lastValue = int64(line.GetThreshold())
+		lastIndex++
 	}
 	//处理最后一个线段
 	if isLastLess {
@@ -64,7 +64,7 @@ func (axis *DiscreteAxis) DeNoise(threshold uint64) {
 	//value小于threshold且相邻的“线段”可以合并
 	// 相邻的且value相等的“线段”可以合并
 	isLastLess := false      //标志上一个line的value是否小于threshold
-	var lastIndex int64 = -1 //上一个线段的value
+	var lastIndex int64 = -1 //上一个线段的索引
 	for _, line := range axis.Lines {
 		if line.Useless(threshold) {
 			if isLastLess { //若前一个线段也小于阈值，做Merge操作
