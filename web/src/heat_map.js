@@ -54,8 +54,17 @@ export function convert(data, statPreference, dataPreference) {
 
 export function markColor(labels) {
   let p = 0;
-  return labels.map(({ start_key, end_key }, j) => {
-    if (j === 0 || start_key !== labels[j-1].start_key || end_key !== labels[j-1].end_key) {
+  return labels.map(({ start_key, end_key, labels: names}, j) => {
+    let equal = false;
+    if (j > 0 && names.length === labels[j - 1].labels.length) {
+      equal = true;
+      names.forEach((name, i) => {
+        if (name !== labels[j].labels[i]) {
+          equal = false;
+        }
+      });
+    }
+    if (j === 0 || ((start_key !== labels[j-1].start_key || end_key !== labels[j-1].end_key) && !equal)) {
       p = p + 1;
     }
     return label_colors[p % label_colors.length];
