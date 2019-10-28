@@ -155,22 +155,23 @@ func TestPixel(t *testing.T) {
 
 	//threshold := 6
 	// 基轴DeNiose 后
-	//{"", "e", "h", "i", "k", "o", "q", "r",}
-	//{      5,  6,  10,   7,   9,   6,   4, }
+	//{"", "c", "f", "k", "n", "o", "r",}
+	//{      5,  6,  10,   9,   9,   6,}
+
 	//1
 	//{"",  "b", "c", "e", "f", "h", "i", "k", "l", "m", "o", }
 	//{       1,   5,   5,   6,   6,  10,   7,   6,   0,   9, }
-	//{      5,  6,   10,   7,   9,   0,   0,}
+	//{      5,  6,   10,   9,   9,   0,}
 	//2
 	//{"",  "a", "d", "e", "i", "k", "n", "o", "q", "r",}
 	//{       0,   5,   0,   3,   7,   9,   6,   6,   4,}
-	//{      5,   3,   3,   7,   9,   6,   4,}
+	//{      5,   5,   7,   9,   6,   6,}
 	timeN := DiscreteTimes{plane.StartTime, plane.Axes[1].EndTime, plane.Axes[3].EndTime}
-	keyM := DiscreteKeys{"", "e", "h", "i", "k", "o", "q", "r"}
+	keyM := DiscreteKeys{"", "c", "f", "k", "n", "o", "r"}
 
 	uint64NM := [][]uint64{
-		{5, 6, 10, 7, 9, 0, 0},
-		{5, 3, 3, 7, 9, 6, 4},
+		{5, 6, 10, 9, 9, 0},
+		{5, 5, 7, 9, 6, 6},
 	}
 
 	expectMatrix := &Matrix{

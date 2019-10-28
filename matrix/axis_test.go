@@ -97,23 +97,18 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func TestEffect(t *testing.T) {
+func TestGenerateThresholds(t *testing.T) {
 	startKey := ""
 	uint64List := []uint64{0, 0, 10, 2, 3, 3, 0, 7, 11, 2}
 	endKeyList := []string{"a", "b", "d", "e", "h", "i", "k", "l", "t", "z"}
 	endTime := time.Now()
 	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
 
-	max := 13
-	num := make([]uint, max)
+	expect := []uint64{0, 2, 3, 7, 10, 11}
+	result := axis.GenerateThresholds()
 
-	expect := []uint{8, 8, 8, 8, 6, 6, 6, 6, 5, 5, 5, 3, 1}
-	for i := 0; i < max; i++ {
-		num[i] = axis.Effect(uint64(i))
-	}
-
-	if !reflect.DeepEqual(num, expect) {
-		t.Fatalf("expect %v, but got %v", expect, num)
+	if !reflect.DeepEqual(result, expect) {
+		t.Fatalf("expect %v, but got %v", expect, result)
 	}
 }
 
@@ -142,6 +137,77 @@ func TestDeNoise(t *testing.T) {
 	expectEndKeyList2 := []string{"z"}
 	expectAxis2 := BuildDiscreteAxis(startKey, expectEndKeyList2, expectUint64List2, endTime)
 	newAxis.DeNoise(threshold2)
+	if !reflect.DeepEqual(newAxis, expectAxis2) {
+		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis2), SprintDiscreteAxis(newAxis))
+	}
+}
+
+func TestIsMerge(t *testing.T) {
+	values := []uint64{4, 2, 8, 5}
+
+	thresholds := uint64(5)
+	expect := false
+	result := IsMerge(values, thresholds)
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
+
+	thresholds = uint64(6)
+	expect = true
+	result = IsMerge(values, thresholds)
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
+}
+
+func TestEffect(t *testing.T) {
+	startKey := ""
+	uint64List := []uint64{0, 0, 10, 2, 3, 3, 0, 7, 11, 2}
+	endKeyList := []string{"a", "b", "d", "e", "h", "i", "k", "l", "t", "z"}
+	endTime := time.Now()
+	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
+
+	thresholds := axis.GenerateThresholds()
+	step := 3
+	num := make([]uint, len(thresholds))
+
+	expect := []uint{10, 8, 8, 8, 4, 4}
+	for i := 0; i < len(thresholds); i++ {
+		num[i] = axis.Effect(step, thresholds[i])
+	}
+
+	if !reflect.DeepEqual(num, expect) {
+		t.Fatalf("expect %v, but got %v", expect, num)
+	}
+}
+
+func TestSquash(t *testing.T) {
+	startKey := ""
+	uint64List := []uint64{4, 0, 10, 2, 3, 3, 0, 7, 11, 5, 1}
+	endKeyList := []string{"a", "b", "d", "e", "h", "i", "k", "l", "t", "w", "z"}
+	endTime := time.Now()
+	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
+
+	//第一遍测试
+	threshold1 := uint64(3)
+	step1 := 3
+	expectUint64List1 := []uint64{4, 0, 10, 3, 0, 7, 11, 5, 1}
+	expectEndKeyList1 := []string{"a", "b", "d", "i", "k", "l", "t", "w", "z"}
+	expectAxis1 := BuildDiscreteAxis(startKey, expectEndKeyList1, expectUint64List1, endTime)
+	axis.Squash(step1, threshold1)
+	if !reflect.DeepEqual(axis, expectAxis1) {
+		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis1), SprintDiscreteAxis(axis))
+	}
+
+	/**********************************************************/
+	newAxis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
+	//第二遍测试
+	threshold2 := uint64(6)
+	step2 := 3
+	expectUint64List2 := []uint64{4, 0, 10, 3, 0, 11, 1}
+	expectEndKeyList2 := []string{"a", "b", "d", "i", "k", "w", "z"}
+	expectAxis2 := BuildDiscreteAxis(startKey, expectEndKeyList2, expectUint64List2, endTime)
+	newAxis.Squash(step2, threshold2)
 	if !reflect.DeepEqual(newAxis, expectAxis2) {
 		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis2), SprintDiscreteAxis(newAxis))
 	}

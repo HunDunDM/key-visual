@@ -40,26 +40,31 @@ func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) 
 	startTime = plane.StartTime
 	axis = new(DiscreteAxis)
 	length := len(plane.Axes)
+	if length == 0 {
+		// 此种情况实际应该不会出现
+		return axis, startTime
+	}
 	axis.EndTime = plane.Axes[length-1].EndTime
-	// 把Plane里面每条key轴的keys都拿出来放在一个string切片里
-	// isInside用于判断一个Key是否已经放在切片中了
-	isInside := make(map[string]bool, 0)
-	allKeys := make([]string, 0)
-	for _, d := range plane.Axes {
-		if len(d.Lines) == 0 {
+	// keysSet用于去重
+	keysSet := make(map[string]struct{}, len(plane.Axes[0].Lines))
+	for _, axis := range plane.Axes {
+		if len(axis.Lines) == 0 {
 			//忽略空的key轴
 			continue
 		}
-		for _, k := range d.GetDiscreteKeys() {
-			_, ok := isInside[k]
-			if ok == false {
-				isInside[k] = true
-				allKeys = append(allKeys, k)
-			}
+		keysSet[axis.StartKey] = struct{}{}
+		for _, line := range axis.Lines {
+			keysSet[line.EndKey] = struct{}{}
 		}
 	}
+
+	allKeys := make([]string, 0, len(keysSet))
+	for key := range keysSet {
+		allKeys = append(allKeys, key)
+	}
 	sort.Strings(allKeys)
-	//初始一个Value, 用于初始化
+
+	// 初始一个Value, 用于初始化
 	var defaultValue Value
 	for _, axis := range plane.Axes {
 		for _, Line := range axis.Lines {
@@ -70,12 +75,17 @@ func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) 
 			break
 		}
 	}
+	if defaultValue == nil {
+		// 此种情况实际应该不会出现
+		return axis, startTime
+	}
 	if len(allKeys) == 0 {
 		//此时Compact是个空轴，StartKey实际无意义
 		axis.StartKey = ""
 	} else {
 		axis.StartKey = allKeys[0]
 	}
+
 	length = len(allKeys)
 	if length > 0 {
 		axis.Lines = make([]*Line, 0, length-1)
@@ -118,7 +128,7 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 				step = step2
 				index = n1*step1 + (i-n1)*step2
 			}
-			//将step个key轴合并
+			// 将step个key轴合并
 			tempPlane := &DiscretePlane{}
 			if i == 0 {
 				tempPlane.StartTime = plane.StartTime
@@ -127,6 +137,7 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 			}
 			tempPlane.Axes = make([]*DiscreteAxis, step)
 			for i := 0; i < step; i++ {
+				// 克隆数据，防止对原始数据修改
 				tempPlane.Axes[i] = plane.Axes[index+i].Clone()
 			}
 			axis, _ := tempPlane.Compact()
@@ -137,6 +148,7 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 	} else {
 		newPlane.Axes = make([]*DiscreteAxis, len(plane.Axes))
 		for i := 0; i < len(plane.Axes); i++ {
+			// 克隆数据，防止对原始数据修改
 			newPlane.Axes[i] = plane.Axes[i].Clone()
 		}
 	}
@@ -152,29 +164,30 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 			thresholdSet[line.GetThreshold()] = struct{}{}
 		}
 
-		thresholds := make([]uint64, 0, len(thresholdSet))
-		for threshold := range thresholdSet {
-			thresholds = append(thresholds, threshold)
+		thresholds := axis.GenerateThresholds()
+		// 步长向上取整
+		step := len(axis.Lines) / m
+		if step*m != len(axis.Lines) {
+			step++
 		}
-		sort.Slice(thresholds, func(i, j int) bool { return thresholds[i] < thresholds[j] })
 		//二分查找
 		i := sort.Search(len(thresholds), func(i int) bool {
-			return axis.Effect(thresholds[i]) <= uint(m)
+			return axis.Effect(step, thresholds[i]) <= uint(m)
 		})
 
 		//取最相近的
 		threshold1 := thresholds[i]
-		num1 := axis.Effect(threshold1)
+		num1 := axis.Effect(step, threshold1)
 		if i > 0 && num1 != uint(m) {
 			threshold2 := thresholds[i-1]
-			num2 := axis.Effect(threshold2)
+			num2 := axis.Effect(step, threshold2)
 			if (int(num2) - m) < (m - int(num1)) {
-				axis.DeNoise(threshold2)
+				axis.Squash(step, threshold2)
 			} else {
-				axis.DeNoise(threshold1)
+				axis.Squash(step, threshold1)
 			}
 		} else {
-			axis.DeNoise(threshold1)
+			axis.Squash(step, threshold1)
 		}
 	}
 
