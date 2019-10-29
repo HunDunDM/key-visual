@@ -136,7 +136,30 @@ func (s *Stat) Append(regions []*regionInfo) {
 	}
 	//对lins的value小于1（即为0）的线段压缩
 	axis.DeNoise(1)
-	value, _ := json.Marshal(axis)
+
+	type Line struct {
+		// StartKey string // EndKey from the previous Line
+		EndKey string  `json:"end_key"`
+		statUnit       `json:"stat_unit"`
+	}
+
+	type DiscreteAxis struct {
+		StartKey string  `json:"start_key"` // 第一条Line的StartKey
+		Lines    []Line `json:"lines"`
+		// StartTime time.Time // EndTime from the previous DiscreteAxis
+		EndTime time.Time `json:"end_time"` // 该key轴的time坐标
+	}
+
+	newAxis := DiscreteAxis{}
+	newAxis.StartKey = axis.StartKey
+	newAxis.EndTime = axis.EndTime
+	newAxis.Lines = make([]Line, len(axis.Lines))
+	for i:=0; i<len(axis.Lines); i++ {
+		newAxis.Lines[i].EndKey = axis.Lines[i].EndKey
+		newAxis.Lines[i].statUnit = *axis.Lines[i].Value.(*statUnit)
+	}
+
+	value, _ := json.Marshal(newAxis)
 	nowTime := make([]byte, 8)
 	binary.BigEndian.PutUint64(nowTime, uint64(time.Now().Unix()))
 	s.Lock()
@@ -163,16 +186,36 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 		return nil
 	}
 
+	type Line struct {
+		// StartKey string // EndKey from the previous Line
+		EndKey string  `json:"end_key"`
+		statUnit       `json:"stat_unit"`
+	}
+
+	type DiscreteAxis struct {
+		StartKey string  `json:"start_key"` // 第一条Line的StartKey
+		Lines    []Line `json:"lines"`
+		// StartTime time.Time // EndTime from the previous DiscreteAxis
+		EndTime time.Time `json:"end_time"` // 该key轴的time坐标
+	}
+
 	var rangeTimePlane matrix.DiscretePlane
 	for _, value := range rangeValues {
-		axis := matrix.DiscreteAxis{}
+		axis := DiscreteAxis{}
 		fmt.Println(value)
+
+		//var table Table
+		//err := json.Unmarshal(value, &table)
+
 		err := json.Unmarshal([]byte(value), &axis)
 		if err != nil {
+			fmt.Println(err)
 			fmt.Println("unmarshal failed")
 			return nil
+		} else {
+			fmt.Println("unmarshal csdcscsscd")
 		}
-		rangeTimePlane.Axes = append(rangeTimePlane.Axes, &axis)
+		//rangeTimePlane.Axes = append(rangeTimePlane.Axes, &axis)
 	}
 	//key范围上截取信息
 	for i := 0; i < len(rangeTimePlane.Axes); i++ {

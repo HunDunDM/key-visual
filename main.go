@@ -50,7 +50,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func updateStat(ctx context.Context) {
 	//ticker := time.NewTicker(time.Minute)
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(10*time.Second)
 	defer ticker.Stop()
 	for {
 		select {
