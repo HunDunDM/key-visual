@@ -11,13 +11,11 @@ import (
 
 var (
 	//服务器监听的 IP 地址和端口号
-	addr = flag.String("addr", "0.0.0.0:8001", "Listening address")
+	addr = flag.String("addr", "0.0.0.0:8000", "Listening address")
 	//PD 服务器地址
 	pdAddr = flag.String("pd", "http://172.16.4.191:8010", "PD address")
 	//TiDB服务器地址
 	tidbAddr = flag.String("tidb", "http://172.16.4.191:10080", "TiDB Address")
-	//是否忽略系统数据 mysql
-	ignoreSys = flag.Bool("no-sys", true, "Ignore system database")
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +26,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	end := r.FormValue("endtime")
 	endTime := time.Now()
 	startTime := endTime.Add(-60 * time.Minute)
+	// tag参数表示哪种数据指标
+	tag := r.FormValue("tag")
+	// mode参数表示数据统计的模式，如最大值、平均值
+	mode := r.FormValue("mode")
 
 	if start != "" {
 		if d, err := time.ParseDuration(start); err == nil {
@@ -42,7 +44,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if endKey == "" {
 		endKey = "~" //\126
 	}
-	matrix := globalStat.RangeMatrix(startTime, endTime, startKey, endKey)
+	matrix := globalStat.RangeMatrix(startTime, endTime, startKey, endKey, tag, mode)
 	data, _ := json.Marshal(matrix)
 	_, err := w.Write(data)
 	perr(err)
