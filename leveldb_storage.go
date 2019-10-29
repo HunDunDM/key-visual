@@ -6,22 +6,22 @@ import (
 	"github.com/pingcap/goleveldb/leveldb/iterator"
 )
 
-type LeveldbRegion struct {
+type LeveldbStorage struct {
 	*leveldb.DB
 }
 
-// NewLeveldbKV is used to store regions information.
-func NewLeveldbRegion(path string) (*LeveldbRegion, error) {
+// NewLeveldbStorage is used to store regions information.
+func NewLeveldbStorage(path string) (*LeveldbStorage, error) {
 	db, err := leveldb.OpenFile(path, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &LeveldbRegion{db}, nil
+	return &LeveldbStorage{db}, nil
 }
 
 // Load gets a value for a given key.
-func (kv *LeveldbRegion) Load(key []byte) (string, error) {
-	v, err := kv.Get(key, nil)
+func (db *LeveldbStorage) Load(key []byte) (string, error) {
+	v, err := db.Get(key, nil)
 	if err != nil {
 		return "", err
 	}
@@ -29,11 +29,11 @@ func (kv *LeveldbRegion) Load(key []byte) (string, error) {
 }
 
 // Save stores a key-value pair.
-func (kv *LeveldbRegion) Save(key, value []byte) error {
-	return kv.Put(key, value, nil)
+func (db *LeveldbStorage) Save(key, value []byte) error {
+	return db.Put(key, value, nil)
 }
-func (kv *LeveldbRegion) searchRegion(k []byte) iterator.Iterator {
-	iter := kv.NewIterator(nil, nil)
+func (db *LeveldbStorage) search(k []byte) iterator.Iterator {
+	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
 		if string(iter.Key()) < string(k) {
 			return iter
@@ -42,11 +42,19 @@ func (kv *LeveldbRegion) searchRegion(k []byte) iterator.Iterator {
 	iter.Release()
 	return nil
 }
+func (db *LeveldbStorage) traversal() (allValues []string) {
+	iter := db.NewIterator(nil, nil)
+	for iter.Next() {
+		allValues = append(allValues, string(iter.Value()))
+	}
+	iter.Release()
+	return allValues
+}
 
 // Range gets a range of value for a given key range.
-func (kv *LeveldbRegion) LoadRange(startKey, endKey []byte, limit int) ([]string, []string, error) {
-	startIter := kv.searchRegion(startKey)
-	endIter := kv.searchRegion(endKey)
+func (db *LeveldbStorage) LoadRange(startKey, endKey []byte, limit int) ([]string, []string, error) {
+	startIter := db.search(startKey)
+	endIter := db.search(endKey)
 	if endIter == nil {
 		return nil, nil, errors.New("endTime too early")
 	}
