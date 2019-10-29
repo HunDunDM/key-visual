@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/hex"
+	"testing"
+	"time"
+
 	"github.com/HunDunDM/key-visual/matrix"
 	"github.com/pingcap/tidb/tablecodec"
 	"github.com/pingcap/tidb/util/codec"
-	"testing"
-	"time"
 )
 
 func encodeTablePrefix(tableID int64) string {
