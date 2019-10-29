@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/syndtr/goleveldb/leveldb"
 	"reflect"
 	"testing"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 func TestUpdateAndLoadTables(t *testing.T) {

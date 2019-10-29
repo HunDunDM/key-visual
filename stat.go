@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"github.com/HunDunDM/key-visual/matrix"
 	"sync"
 	"time"
