@@ -79,5 +79,6 @@ func main() {
 	_ = http.ListenAndServe(*addr, handler)
 
 	// 关闭tableDb
+	globalStat.Close()
 	tables.Close()
 }

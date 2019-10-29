@@ -1,24 +1,21 @@
 package main
 
 import (
-	"fmt"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/pingcap/goleveldb/leveldb"
 	"reflect"
 	"testing"
 )
-
+const testtablepath = "test/table"
 func TestUpdateAndLoadTables(t *testing.T) {
+	tables.LeveldbStorage, _ = NewLeveldbStorage(testtablepath)
 	updateTables()
 	tablesBefore := loadTables()
-	tables.Close()
-	db, err := leveldb.OpenFile(tablePath, nil)
+	tables.LeveldbStorage.Close()
+	db, err := leveldb.OpenFile(testtablepath, nil)
 	perr(err)
-	tables.tableDb = db
+	tables.LeveldbStorage = &LeveldbStorage{db}
 
 	tablesAfter := loadTables()
-	for _, table := range tablesAfter {
-		fmt.Println(table)
-	}
 
 	if !reflect.DeepEqual(tablesBefore, tablesAfter) {
 		t.Fatalf("expect\n%v\nbut got\n%v", tablesBefore, tablesAfter)
