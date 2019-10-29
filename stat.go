@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const defaultpath = "record"
+const defaultregionpath = "storage/region"
 
 type regionValue struct {
 	WrittenBytes uint64 `json:"written_bytes"`
@@ -95,7 +95,7 @@ func (v *statUnit) Equal(other matrix.Value) bool {
 
 type Stat struct {
 	sync.RWMutex
-	*LeveldbRegion
+	*LeveldbStorage
 }
 
 // 将regionInfo转换为key轴并插入Stat中，同时处理分层机制
@@ -139,8 +139,8 @@ func (s *Stat) Append(regions []*regionInfo) {
 
 	type Line struct {
 		// StartKey string // EndKey from the previous Line
-		EndKey string  `json:"end_key"`
-		statUnit       `json:"stat_unit"`
+		EndKey   string `json:"end_key"`
+		statUnit `json:"stat_unit"`
 	}
 
 	type DiscreteAxis struct {
@@ -154,7 +154,7 @@ func (s *Stat) Append(regions []*regionInfo) {
 	newAxis.StartKey = axis.StartKey
 	newAxis.EndTime = axis.EndTime
 	newAxis.Lines = make([]*Line, len(axis.Lines))
-	for i:=0; i<len(axis.Lines); i++ {
+	for i := 0; i < len(axis.Lines); i++ {
 		newAxis.Lines[i] = &Line{
 			EndKey:   axis.Lines[i].EndKey,
 			statUnit: *axis.Lines[i].Value.(*statUnit),
@@ -168,7 +168,7 @@ func (s *Stat) Append(regions []*regionInfo) {
 	defer s.Unlock()
 	err := s.Save(nowTime, value)
 	if err != nil {
-		fmt.Println(err)
+		perr(err)
 	}
 }
 
@@ -177,11 +177,11 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 	start := startTime.Unix()
 	end := endTime.Unix()
 	limit := (end-start)/60 + 1
-	s.RLock()
 	var startBuf = make([]byte, 8)
 	var endBuf = make([]byte, 8)
 	binary.BigEndian.PutUint64(startBuf, uint64(start))
 	binary.BigEndian.PutUint64(endBuf, uint64(end))
+	s.RLock()
 	_, rangeValues, _ := s.LoadRange(startBuf, endBuf, int(limit))
 	s.RUnlock()
 	if rangeValues == nil || len(rangeValues) == 0 {
@@ -190,8 +190,8 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 
 	type Line struct {
 		// StartKey string // EndKey from the previous Line
-		EndKey string  `json:"end_key"`
-		statUnit       `json:"stat_unit"`
+		EndKey   string `json:"end_key"`
+		statUnit `json:"stat_unit"`
 	}
 
 	type DiscreteAxis struct {
@@ -204,18 +204,17 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 	var rangeTimePlane matrix.DiscretePlane
 	for _, value := range rangeValues {
 		axis := DiscreteAxis{}
-		fmt.Println(value)
 		err := json.Unmarshal([]byte(value), &axis)
 		if err != nil {
-			fmt.Println("unmarshal failed, error: ", err)
+			perr(err)
 			return nil
 		}
 
 		lines := make([]*matrix.Line, len(axis.Lines))
 		for i, v := range axis.Lines {
 			lines[i] = &matrix.Line{
-				EndKey:   v.EndKey,
-				Value: &v.statUnit,
+				EndKey: v.EndKey,
+				Value:  &v.statUnit,
 			}
 		}
 		newAxis := matrix.DiscreteAxis{
@@ -239,5 +238,5 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 var globalStat Stat
 
 func init() {
-	globalStat.LeveldbRegion, _ = NewLeveldbRegion(defaultpath)
+	globalStat.LeveldbStorage, _ = NewLeveldbStorage(defaultregionpath)
 }

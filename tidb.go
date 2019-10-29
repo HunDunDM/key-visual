@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/HunDunDM/key-visual/matrix"
-	"github.com/syndtr/goleveldb/leveldb"
 	"sort"
 	"sync"
 )
 
-const tablePath = "store/table"
+const defaulttablePath = "storage/table"
 
 // Table saves the info of a table
 type Table struct {
@@ -43,38 +42,28 @@ func (s TableSlice) Less(i, j int) bool {
 
 type TablesStore struct {
 	sync.RWMutex
-	tableDb *leveldb.DB
+	*LeveldbStorage
 }
 
 func loadTables() []*Table {
-	tables.RLock()
-	defer tables.RUnlock()
 	tableSlice := make([]*Table, 0)
-	if tables.tableDb == nil {
-		return tableSlice
-	}
-	iter := tables.tableDb.NewIterator(nil, nil)
-	for iter.Next() {
-		value := iter.Value()
+	tables.RLock()
+	allValue := tables.traversal()
+	tables.RUnlock()
+	for _, v := range allValue {
 		var table Table
-		err := json.Unmarshal(value, &table)
+		err := json.Unmarshal([]byte(v), &table)
 		perr(err)
 		tableSlice = append(tableSlice, &table)
 	}
-	iter.Release()
-	//err = iter.Error()
-
 	sort.Sort(TableSlice(tableSlice))
 	return tableSlice
 }
 
 func updateTables() {
+	dbInfos := dbRequest(0)
 	tables.Lock()
 	defer tables.Unlock()
-	if tables.tableDb == nil {
-		return
-	}
-	dbInfos := dbRequest(0)
 	for _, info := range dbInfos {
 		if info.State == 0 {
 			continue
@@ -97,7 +86,7 @@ func updateTables() {
 			perr(err)
 			var key = make([]byte, 8)
 			binary.BigEndian.PutUint64(key, uint64(newTable.ID))
-			err = tables.tableDb.Put(key, value, nil)
+			err = tables.Save(key, value)
 			perr(err)
 		}
 	}
@@ -150,8 +139,6 @@ func RangeTableID(newMatrix *matrix.Matrix) *matrix.Matrix {
 
 			indexStart := GenTableIndexPrefix(tbl.ID, idx)
 			indexEnd := GenTableIndexPrefix(tbl.ID, idx+1)
-			//fmt.Println(indexStart, "aaaaaaaaaa", tbl.ID, idx)
-			//fmt.Println(indexEnd, "aaaaaaaaa", tbl.ID, idx)
 			start := sort.Search(len(keys), func(i int) bool {
 				return keys[i] > indexStart
 			})
@@ -186,14 +173,5 @@ func RangeTableID(newMatrix *matrix.Matrix) *matrix.Matrix {
 var tables TablesStore
 
 func init() {
-	db, err := leveldb.OpenFile(tablePath, nil)
-	perr(err)
-	tables.tableDb = db
-}
-
-func (s *TablesStore) Close() {
-	s.Lock()
-	s.tableDb.Close()
-	s.tableDb = nil
-	s.Unlock()
+	tables.LeveldbStorage, _ = NewLeveldbStorage(defaulttablePath)
 }
