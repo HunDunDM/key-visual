@@ -137,12 +137,19 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 			}
 			tempPlane.Axes = make([]*DiscreteAxis, step)
 			for i := 0; i < step; i++ {
-				tempPlane.Axes[i] = plane.Axes[index+i]
+				// 克隆数据，防止对原始数据修改
+				tempPlane.Axes[i] = plane.Axes[index+i].Clone()
 			}
 			axis, _ := tempPlane.Compact()
 
 			//将合并后的key插入newPlane
 			newPlane.Axes = append(newPlane.Axes, axis)
+		}
+	} else {
+		newPlane.Axes = make([]*DiscreteAxis, len(plane.Axes))
+		for i := 0; i < len(plane.Axes); i++ {
+			// 克隆数据，防止对原始数据修改
+			newPlane.Axes[i] = plane.Axes[i].Clone()
 		}
 	}
 

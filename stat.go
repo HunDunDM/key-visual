@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const defaultpath = "store/region"
+const defaultpath = "record"
 
 type regionValue struct {
 	WrittenBytes uint64 `json:"written_bytes"`
@@ -93,62 +93,6 @@ func (v *statUnit) Equal(other matrix.Value) bool {
 	return *v == *another
 }
 
-// 一个单指标的统计单元，需要实现matrix.Value
-type singleValue struct {
-	// 同时计算平均值和最大值
-	// 0表示最大值模式，1表示平均值模式
-	Value uint64   `json:"value"`
-	Mode  int      `json:"mode"`
-}
-
-func (v *singleValue) Split(count int) matrix.Value {
-	countU64 := uint64(count)
-	res := *v
-	if v.Mode==1 {
-		res.Value /= countU64
-	}
-	return &res
-}
-
-func (v *singleValue) Merge(other matrix.Value) {
-	v2 := other.(*singleValue)
-	if v.Mode == 0 {
-		v.Value = max(v.Value, v2.Value)
-	} else {
-		v.Value = v.Value + v2.Value
-	}
-}
-
-func (v *singleValue) Useless(threshold uint64) bool {
-	return v.Value < threshold
-}
-
-func (v *singleValue) GetThreshold() uint64 {
-	return v.Value
-}
-
-func (v *singleValue) Clone() matrix.Value {
-	statUnitClone := *v
-	return &statUnitClone
-}
-
-func (v *singleValue) Reset() {
-	*v = singleValue {
-		Mode: v.Mode,
-	}
-}
-
-func (v *singleValue) Default() matrix.Value {
-	return &singleValue {
-		Mode: v.Mode,
-	}
-}
-
-func (v *singleValue) Equal(other matrix.Value) bool {
-	another := other.(*singleValue)
-	return *v == *another
-}
-
 type Stat struct {
 	sync.RWMutex
 	*LeveldbRegion
@@ -228,7 +172,7 @@ func (s *Stat) Append(regions []*regionInfo) {
 	}
 }
 
-func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey string, endKey string, tag, mode string) *matrix.Matrix {
+func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey string, endKey string) *matrix.Matrix {
 	//time范围上截取信息
 	start := startTime.Unix()
 	end := endTime.Unix()
@@ -288,69 +232,7 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 			rangeTimePlane.Axes[i] = tempAxis.Range(startKey, endKey)
 		}
 	}
-
-	separate := func(v matrix.Value) matrix.Value {
-		unit := v.(*statUnit)
-		var m int
-		switch mode {
-		case "average":
-			m = 1
-		default:
-			m = 0
-		}
-
-		var data uint64
-		switch tag {
-		case "read_bytes":
-			data = unit.Max.ReadBytes
-		case "written_bytes":
-			data = unit.Max.WrittenBytes
-		case "read_keys":
-			data = unit.Max.ReadKeys
-		case "written_keys":
-			data = unit.Max.WrittenKeys
-		case "read_and_written_bytes":
-			data = unit.Max.ReadBytes + unit.Max.WrittenBytes
-		case "read_and_written_keys":
-			data = unit.Max.ReadKeys + unit.Max.WrittenKeys
-		default:
-			return v.Clone()
-		}
-
-		single := &singleValue{
-			Value: data,
-			Mode:  m,
-		}
-		return single
-	}
-	// 根据tag和mode从rangeTimePlane中克隆并分离数据
-	newPlane := &matrix.DiscretePlane {
-		StartTime : rangeTimePlane.StartTime,
-		Axes: make([]*matrix.DiscreteAxis, len(rangeTimePlane.Axes)),
-	}
-	for i:=0; i<len(newPlane.Axes); i++ {
-		newPlane.Axes[i] = &matrix.DiscreteAxis {
-			StartKey: rangeTimePlane.Axes[i].StartKey,
-			EndTime: rangeTimePlane.Axes[i].EndTime,
-			Lines: make([]*matrix.Line, len(rangeTimePlane.Axes[i].Lines)),
-		}
-
-		for j:=0; j<len(rangeTimePlane.Axes[i].Lines); j++ {
-			newPlane.Axes[i].Lines[j] = &matrix.Line {
-				EndKey: rangeTimePlane.Axes[i].Lines[j].EndKey,
-				Value: separate(rangeTimePlane.Axes[i].Lines[j].Value),
-			}
-			fmt.Println("Value = ", newPlane.Axes[i].Lines[j].Value)
-		}
-	}
-
-	newMatrix := newPlane.Pixel(50, 80)
-	for i:=0; i<len(newMatrix.Data); i++ {
-		for j:=0; j<len(newMatrix.Data[i]); j++ {
-			fmt.Print(newMatrix.Data[i][j])
-		}
-		fmt.Println("")
-	}
+	newMatrix := rangeTimePlane.Pixel(50, 80)
 	return RangeTableID(newMatrix)
 }
 
