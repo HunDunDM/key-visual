@@ -13,9 +13,9 @@ var (
 	//服务器监听的 IP 地址和端口号
 	addr = flag.String("addr", "0.0.0.0:8001", "Listening address")
 	//PD 服务器地址
-	pdAddr = flag.String("pd", "http://117.50.101.185:2379", "PD address")
+	pdAddr = flag.String("pd", "http://172.16.4.191:8010", "PD address")
 	//TiDB服务器地址
-	tidbAddr = flag.String("tidb", "http://117.50.93.241:10080", "TiDB Address")
+	tidbAddr = flag.String("tidb", "http://172.16.4.191:10080", "TiDB Address")
 	//是否忽略系统数据 mysql
 	ignoreSys = flag.Bool("no-sys", true, "Ignore system database")
 )
@@ -49,8 +49,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateStat(ctx context.Context) {
-	ticker := time.NewTicker(time.Minute)
-	//ticker := time.NewTicker(time.Second)
+	//ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(10*time.Second)
 	defer ticker.Stop()
 	for {
 		select {

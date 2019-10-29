@@ -7,10 +7,10 @@ import (
 
 // 稀疏key轴
 type DiscreteAxis struct {
-	StartKey string // 第一条Line的StartKey
-	Lines    []*Line
+	StartKey string  `json:"start_key"` // 第一条Line的StartKey
+	Lines    []*Line `json:"lines"`
 	// StartTime time.Time // EndTime from the previous DiscreteAxis
-	EndTime time.Time // 该key轴的time坐标
+	EndTime time.Time `json:"end_time"` // 该key轴的time坐标
 }
 
 type DiscreteKeys []string

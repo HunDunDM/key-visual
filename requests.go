@@ -42,7 +42,7 @@ func request(addr string, uri string, v interface{}) {
 	perr(err)
 	err = resp.Body.Close()
 	perr(err)
-	err = json.Unmarshal([]byte(r), v)
+	err = json.Unmarshal(r, v)
 	perr(err)
 }
 
