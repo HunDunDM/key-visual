@@ -145,7 +145,7 @@ func (s *Stat) Append(regions []*regionInfo) {
 
 	type DiscreteAxis struct {
 		StartKey string  `json:"start_key"` // 第一条Line的StartKey
-		Lines    []Line `json:"lines"`
+		Lines    []*Line `json:"lines"`
 		// StartTime time.Time // EndTime from the previous DiscreteAxis
 		EndTime time.Time `json:"end_time"` // 该key轴的time坐标
 	}
@@ -153,10 +153,12 @@ func (s *Stat) Append(regions []*regionInfo) {
 	newAxis := DiscreteAxis{}
 	newAxis.StartKey = axis.StartKey
 	newAxis.EndTime = axis.EndTime
-	newAxis.Lines = make([]Line, len(axis.Lines))
+	newAxis.Lines = make([]*Line, len(axis.Lines))
 	for i:=0; i<len(axis.Lines); i++ {
-		newAxis.Lines[i].EndKey = axis.Lines[i].EndKey
-		newAxis.Lines[i].statUnit = *axis.Lines[i].Value.(*statUnit)
+		newAxis.Lines[i] = &Line{
+			EndKey:   axis.Lines[i].EndKey,
+			statUnit: *axis.Lines[i].Value.(*statUnit),
+		}
 	}
 
 	value, _ := json.Marshal(newAxis)
@@ -164,7 +166,7 @@ func (s *Stat) Append(regions []*regionInfo) {
 	binary.BigEndian.PutUint64(nowTime, uint64(time.Now().Unix()))
 	s.Lock()
 	defer s.Unlock()
-	err := s.Save(string(nowTime), string(value))
+	err := s.Save(nowTime, value)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -180,7 +182,7 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 	var endBuf = make([]byte, 8)
 	binary.BigEndian.PutUint64(startBuf, uint64(start))
 	binary.BigEndian.PutUint64(endBuf, uint64(end))
-	_, rangeValues, _ := s.LoadRange(string(startBuf), string(endBuf), int(limit))
+	_, rangeValues, _ := s.LoadRange(startBuf, endBuf, int(limit))
 	s.RUnlock()
 	if rangeValues == nil || len(rangeValues) == 0 {
 		return nil
@@ -194,7 +196,7 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 
 	type DiscreteAxis struct {
 		StartKey string  `json:"start_key"` // 第一条Line的StartKey
-		Lines    []Line `json:"lines"`
+		Lines    []*Line `json:"lines"`
 		// StartTime time.Time // EndTime from the previous DiscreteAxis
 		EndTime time.Time `json:"end_time"` // 该key轴的time坐标
 	}
@@ -203,19 +205,25 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 	for _, value := range rangeValues {
 		axis := DiscreteAxis{}
 		fmt.Println(value)
-
-		//var table Table
-		//err := json.Unmarshal(value, &table)
-
 		err := json.Unmarshal([]byte(value), &axis)
 		if err != nil {
-			fmt.Println(err)
-			fmt.Println("unmarshal failed")
+			fmt.Println("unmarshal failed, error: ", err)
 			return nil
-		} else {
-			fmt.Println("unmarshal csdcscsscd")
 		}
-		//rangeTimePlane.Axes = append(rangeTimePlane.Axes, &axis)
+
+		lines := make([]*matrix.Line, len(axis.Lines))
+		for i, v := range axis.Lines {
+			lines[i] = &matrix.Line{
+				EndKey:   v.EndKey,
+				Value: &v.statUnit,
+			}
+		}
+		newAxis := matrix.DiscreteAxis{
+			StartKey: axis.StartKey,
+			Lines:    lines,
+			EndTime:  axis.EndTime,
+		}
+		rangeTimePlane.Axes = append(rangeTimePlane.Axes, &newAxis)
 	}
 	//key范围上截取信息
 	for i := 0; i < len(rangeTimePlane.Axes); i++ {

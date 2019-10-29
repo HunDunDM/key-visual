@@ -40,6 +40,9 @@ func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) 
 	startTime = plane.StartTime
 	axis = new(DiscreteAxis)
 	length := len(plane.Axes)
+	if length == 0 {
+		return
+	}
 	axis.EndTime = plane.Axes[length-1].EndTime
 	// 把Plane里面每条key轴的keys都拿出来放在一个string切片里
 	// isInside用于判断一个Key是否已经放在切片中了

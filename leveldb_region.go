@@ -20,8 +20,8 @@ func NewLeveldbRegion(path string) (*LeveldbRegion, error) {
 }
 
 // Load gets a value for a given key.
-func (kv *LeveldbRegion) Load(key string) (string, error) {
-	v, err := kv.Get([]byte(key), nil)
+func (kv *LeveldbRegion) Load(key []byte) (string, error) {
+	v, err := kv.Get(key, nil)
 	if err != nil {
 		return "", err
 	}
@@ -29,13 +29,13 @@ func (kv *LeveldbRegion) Load(key string) (string, error) {
 }
 
 // Save stores a key-value pair.
-func (kv *LeveldbRegion) Save(key, value string) error {
-	return kv.Put([]byte(key), []byte(value), nil)
+func (kv *LeveldbRegion) Save(key, value []byte) error {
+	return kv.Put(key, value, nil)
 }
-func (kv *LeveldbRegion) searchRegion(k string) iterator.Iterator {
+func (kv *LeveldbRegion) searchRegion(k []byte) iterator.Iterator {
 	iter := kv.NewIterator(nil, nil)
 	for iter.Next() {
-		if string(iter.Key()) < k {
+		if string(iter.Key()) < string(k) {
 			return iter
 		}
 	}
@@ -44,7 +44,7 @@ func (kv *LeveldbRegion) searchRegion(k string) iterator.Iterator {
 }
 
 // Range gets a range of value for a given key range.
-func (kv *LeveldbRegion) LoadRange(startKey, endKey string, limit int) ([]string, []string, error) {
+func (kv *LeveldbRegion) LoadRange(startKey, endKey []byte, limit int) ([]string, []string, error) {
 	startIter := kv.searchRegion(startKey)
 	endIter := kv.searchRegion(endKey)
 	if endIter == nil {
