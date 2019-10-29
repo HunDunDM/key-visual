@@ -13,6 +13,6 @@ type Value interface {
 
 type Line struct {
 	// StartKey string // EndKey from the previous Line
-	EndKey string
-	Value
+	EndKey string `json:"end_key"`
+	Value  `json:"value"`
 }
