@@ -59,6 +59,7 @@ func updateStat(ctx context.Context) {
 		case <-ticker.C:
 			regions := scanRegions()
 			globalStat.Append(regions)
+			updateTables()
 		}
 	}
 }
@@ -76,4 +77,7 @@ func main() {
 	handler := cors.Default().Handler(mux)
 
 	_ = http.ListenAndServe(*addr, handler)
+
+	// 关闭tableDb
+	tables.Close()
 }

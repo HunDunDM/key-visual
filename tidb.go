@@ -1,19 +1,24 @@
 package main
 
 import (
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"github.com/HunDunDM/key-visual/matrix"
+	"github.com/syndtr/goleveldb/leveldb"
 	"sort"
 	"sync"
 )
 
+const tablePath = "store/table"
+
 // Table saves the info of a table
 type Table struct {
-	Name string
-	DB   string
-	ID   int64
+	Name string `json:"name"`
+	DB   string `json:"db"`
+	ID   int64  `json:"id"`
 
-	Indices map[int64]string
+	Indices map[int64]string `json:"indices"`
 }
 
 func (t *Table) String() string {
@@ -36,23 +41,39 @@ func (s TableSlice) Less(i, j int) bool {
 	return false
 }
 
-// id -> map
-var tables = sync.Map{}
+type TablesStore struct {
+	sync.RWMutex
+	tableDb *leveldb.DB
+}
 
 func loadTables() []*Table {
-	tableSlice := make([]*Table, 0, 1024)
-
-	tables.Range(func(_key, value interface{}) bool {
-		table := value.(*Table)
-		tableSlice = append(tableSlice, table)
-		return true
-	})
+	tables.RLock()
+	defer tables.RUnlock()
+	tableSlice := make([]*Table, 0)
+	if tables.tableDb == nil {
+		return tableSlice
+	}
+	iter := tables.tableDb.NewIterator(nil, nil)
+	for iter.Next() {
+		value := iter.Value()
+		var table Table
+		err := json.Unmarshal(value, &table)
+		perr(err)
+		tableSlice = append(tableSlice, &table)
+	}
+	iter.Release()
+	//err = iter.Error()
 
 	sort.Sort(TableSlice(tableSlice))
 	return tableSlice
 }
 
 func updateTables() {
+	tables.Lock()
+	defer tables.Unlock()
+	if tables.tableDb == nil {
+		return
+	}
 	dbInfos := dbRequest(0)
 	for _, info := range dbInfos {
 		if info.State == 0 {
@@ -71,10 +92,17 @@ func updateTables() {
 				DB:      info.Name.O,
 				Indices: indices,
 			}
-			tables.Store(table.ID, newTable)
+
+			value, err := json.Marshal(newTable)
+			perr(err)
+			var key = make([]byte, 8)
+			binary.BigEndian.PutUint64(key, uint64(newTable.ID))
+			err = tables.tableDb.Put(key, value, nil)
+			perr(err)
 		}
 	}
 }
+
 func RangeTableID(newMatrix *matrix.Matrix) *matrix.Matrix {
 	keys := newMatrix.Keys
 	if keys == nil || len(keys) < 2 {
@@ -88,17 +116,11 @@ func RangeTableID(newMatrix *matrix.Matrix) *matrix.Matrix {
 			Names:    make([]*string, 0),
 		})
 	}
-	updateTables()
 	tbls := loadTables()
 	for _, tbl := range tbls {
 		dataStart := GenTableRecordPrefix(tbl.ID)
 		dataEnd := GenTableRecordPrefix(tbl.ID + 1)
 
-		//fmt.Println(dataStart, "*****", tbl.ID)
-		//fmt.Println(dataEnd, "*****", tbl.ID)
-		//for _, key := range keys {
-		//	fmt.Println(key, "kkkkkk")
-		//}
 		start := sort.Search(len(keys), func(i int) bool {
 			return keys[i] > dataStart
 		})
@@ -159,4 +181,19 @@ func RangeTableID(newMatrix *matrix.Matrix) *matrix.Matrix {
 		}
 	}
 	return newMatrix
+}
+
+var tables TablesStore
+
+func init() {
+	db, err := leveldb.OpenFile(tablePath, nil)
+	perr(err)
+	tables.tableDb = db
+}
+
+func (s *TablesStore) Close() {
+	s.Lock()
+	s.tableDb.Close()
+	s.tableDb = nil
+	s.Unlock()
 }
