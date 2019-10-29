@@ -11,16 +11,11 @@ type DiscretePlane struct {
 }
 
 type DiscreteTimes []time.Time
-type Label struct {
-	StartKey string    `json:"start_key"`
-	EndKey   string    `json:"end_key"`
-	Names    []*string `json:"labels"`
-}
+
 type Matrix struct {
 	Data   [][]Value     `json:"data"`   // 二维数据图
 	Keys   DiscreteKeys  `json:"keys"`   // 纵坐标
 	Times  DiscreteTimes `json:"times"`  // 横坐标
-	Labels []*Label      `json:"labels"` // 标签信息
 }
 
 // 获取离散化后的time序列，含StartTime

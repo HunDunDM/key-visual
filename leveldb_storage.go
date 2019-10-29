@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/pingcap/goleveldb/leveldb"
 	"github.com/pingcap/goleveldb/leveldb/iterator"
 )
@@ -32,6 +31,7 @@ func (db *LeveldbStorage) Load(key []byte) (string, error) {
 func (db *LeveldbStorage) Save(key, value []byte) error {
 	return db.Put(key, value, nil)
 }
+
 func (db *LeveldbStorage) search(k []byte) iterator.Iterator {
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
@@ -42,6 +42,7 @@ func (db *LeveldbStorage) search(k []byte) iterator.Iterator {
 	iter.Release()
 	return nil
 }
+
 func (db *LeveldbStorage) traversal() (allValues []string) {
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
@@ -52,31 +53,26 @@ func (db *LeveldbStorage) traversal() (allValues []string) {
 }
 
 // Range gets a range of value for a given key range.
-func (db *LeveldbStorage) LoadRange(startKey, endKey []byte, limit int) ([]string, []string, error) {
+func (db *LeveldbStorage) LoadRange(startKey, endKey []byte) ([]string, []string) {
 	startIter := db.search(startKey)
 	endIter := db.search(endKey)
 	if endIter == nil {
-		return nil, nil, errors.New("endTime too early")
+		return nil, nil
 	}
 	isStartNil := false
 	if startIter == nil {
 		isStartNil = true
 	}
 	iter := endIter
-	keys := make([]string, 0, limit)
-	values := make([]string, 0, limit)
-	count := 0
+	keys := make([]string, 0)
+	values := make([]string, 0)
 	for iter.Next() {
-		if count >= limit {
-			break
-		}
 		keys = append(keys, string(iter.Key()))
 		values = append(values, string(iter.Value()))
-		count++
 		if !isStartNil && string(iter.Key()) == string(startIter.Key()) {
 			break
 		}
 	}
 	iter.Release()
-	return keys, values, nil
+	return keys, values
 }
