@@ -20,9 +20,12 @@ export default connect(state => ({ settings: state.persist.settings }))(
 
     forceRefresh = () => this.refresh(true);
 
-    onChange = (key, value) => this.props.dispatch(actions.Settings({
-      [key]: value,
-    }));
+    onChange = (key, value) => {
+        this.props.dispatch(actions.Settings({
+            [key]: value,
+        }));
+        this.refresh(false)
+    }
 
     onServerChange = e => this.onChange('server', e.target.value);
     onStartKeyChange = e => this.onChange('startKey', e.target.value);
