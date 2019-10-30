@@ -39,9 +39,7 @@ function generateColorLabels(ceiling) {
 }
 
 export function convert(data, statPreference, dataPreference) {
-  const statFunc = statPreferenceEnum[statPreference].func;
-  const dataFunc = dataPreferenceEnum[dataPreference].func;
-  const convertFunc = value => dataFunc(statFunc(value));
+  const convertFunc = value => value;
   let maxValue = 0;
   const values = data.map(axis => axis.map(statUnit => {
     const value = convertFunc(statUnit);

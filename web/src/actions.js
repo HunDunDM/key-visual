@@ -21,8 +21,8 @@ export default {
     params.set('endkey', endKey || defaultSettings.endKey.value);
     params.set('starttime', startTime || defaultSettings.startTime.value);
     params.set('endtime', autoFresh || !endTime ? defaultSettings.endTime.value : endTime);
-    params.set('tag', dataPreference.value);
-    params.set('mode', statPreference.value);
+    params.set('tag', dataPreference);
+    params.set('mode', statPreference);
     const uri = ['http://', server, '/heatmaps?', params.toString()].join('');
     try {
       console.log("Try Fetch: ", uri);

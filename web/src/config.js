@@ -6,29 +6,29 @@ export const statPreferenceEnum = {
   max: {
     display: 'Max',
     value: 'max',
-    func: value => value.max
+    func: value => value
   },
   average: {
     display: 'Total',
     value: 'average',
-    func: value => value.average
+    func: value => value
   },
 };
 
 export const dataPreferenceEnum = {
   load: {
     display: 'Load',
-    value: 'load',
+    value: 'read_and_written_bytes',
     func: value => value.value,
   },
   read: {
     display: 'Read',
-    value: 'read',
+    value: 'read_bytes',
     func: value => value.value,
   },
   write: {
     display: 'Write',
-    value: 'write',
+    value: 'written_bytes',
     func: value => value.value,
   },
 };
