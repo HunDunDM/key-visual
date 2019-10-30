@@ -14,13 +14,15 @@ const types = {
 export default {
   ...types,
   Update: (force = false) => async (dispatch, getState) => {
-    const {server, startKey, endKey, startTime, endTime, autoFresh} = getState().persist.settings;
+    const { server, startKey, endKey, startTime, endTime, autoFresh, statPreference, dataPreference} = getState().persist.settings;
     if ((!force && !autoFresh) || (!server)) return;
     const params = new URLSearchParams();
     params.set('startkey', startKey || defaultSettings.startKey.value);
     params.set('endkey', endKey || defaultSettings.endKey.value);
     params.set('starttime', startTime || defaultSettings.startTime.value);
     params.set('endtime', autoFresh || !endTime ? defaultSettings.endTime.value : endTime);
+    params.set('tag', dataPreference.value);
+    params.set('mode', statPreference.value);
     const uri = ['http://', server, '/heatmaps?', params.toString()].join('');
     try {
       console.log("Try Fetch: ", uri);
