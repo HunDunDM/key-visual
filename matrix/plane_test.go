@@ -124,6 +124,44 @@ func TestCompact(t *testing.T) {
 	}
 }
 
+func TestTimesSquash(t *testing.T) {
+	times := []int{20, 15, 10, 5, 0}
+	keys := [][]string{
+		{"b", "c", "e", "l", "m", "o"},
+		{"", "b", "f", "h", "i", "k"},
+		{"a", "d", "i", "n", "q", "r"},
+		{"", "e", "i", "k", "n", "o"},
+	}
+	values := [][]uint64{
+		{3, 0, 6, 0, 9},
+		{1, 5, 4, 10, 7},
+		{5, 0, 1, 6, 4},
+		{0, 3, 7, 9, 5},
+	}
+	plane := BuildDiscretePlane(times, keys, values)
+	startTime := plane.StartTime
+	endTime1 := plane.Axes[1].EndTime
+	endTime2 := plane.Axes[3].EndTime
+	result := plane.TimesSquash(2)
+
+	times = []int{20, 15, 10}
+	keys = [][]string{
+		{"",  "b", "c", "e", "f", "h", "i", "k", "l", "m", "o", },
+		{"",  "a", "d", "e", "i", "k", "n", "o", "q", "r",},
+	}
+	values = [][]uint64{
+		{       1,   5,   5,   6,   6,  10,   7,   6,   0,   9, },
+		{       0,   5,   0,   3,   7,   9,   6,   6,   4,},
+	}
+	expect := BuildDiscretePlane(times, keys, values)
+	expect.StartTime = startTime
+	expect.Axes[0].EndTime = endTime1
+	expect.Axes[1].EndTime = endTime2
+
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect\n%v\nbut got\n%v", expect, result)
+	}
+}
 func TestPixel(t *testing.T) {
 	times := []int{20, 15, 10, 5, 0}
 	keys := [][]string{

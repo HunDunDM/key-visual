@@ -17,7 +17,7 @@ var (
 	// TiDB Server address
 	tidbAddr = flag.String("tidb", "http://172.16.4.191:10080", "TiDB Address")
 	//interval
-	interval  = flag.Duration("I", 10*time.Second, "Interval to collect metrics")
+	interval  = flag.Duration("I", time.Minute, "Interval to collect metrics")
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {

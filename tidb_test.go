@@ -24,6 +24,7 @@ func TestUpdateAndLoadTables(t *testing.T) {
 		}
 		tables.LeveldbStorage.Close()
 }
+
 func TestTableSlice_Len(t *testing.T) {
 	var tableSlice TableSlice
 	tableSlice = append(tableSlice, &Table{

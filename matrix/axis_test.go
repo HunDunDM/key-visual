@@ -112,36 +112,6 @@ func TestGenerateThresholds(t *testing.T) {
 	}
 }
 
-func TestDeNoise(t *testing.T) {
-	startKey := ""
-	uint64List := []uint64{4, 0, 10, 2, 3, 3, 0, 7, 11, 2, 1}
-	endKeyList := []string{"a", "b", "d", "e", "h", "i", "k", "l", "t", "w", "z"}
-	endTime := time.Now()
-	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
-
-	//第一遍测试
-	threshold1 := uint64(3)
-	expectUint64List1 := []uint64{4, 0, 10, 2, 3, 0, 7, 11, 2}
-	expectEndKeyList1 := []string{"a", "b", "d", "e", "i", "k", "l", "t", "z"}
-	expectAxis1 := BuildDiscreteAxis(startKey, expectEndKeyList1, expectUint64List1, endTime)
-	axis.DeNoise(threshold1)
-	if !reflect.DeepEqual(axis, expectAxis1) {
-		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis1), SprintDiscreteAxis(axis))
-	}
-
-	/**********************************************************/
-	newAxis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
-	//第二遍测试
-	threshold2 := uint64(12)
-	expectUint64List2 := []uint64{11}
-	expectEndKeyList2 := []string{"z"}
-	expectAxis2 := BuildDiscreteAxis(startKey, expectEndKeyList2, expectUint64List2, endTime)
-	newAxis.DeNoise(threshold2)
-	if !reflect.DeepEqual(newAxis, expectAxis2) {
-		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis2), SprintDiscreteAxis(newAxis))
-	}
-}
-
 func TestIsMerge(t *testing.T) {
 	values := []uint64{4, 2, 8, 5}
 
@@ -210,6 +180,22 @@ func TestSquash(t *testing.T) {
 	newAxis.Squash(step2, threshold2)
 	if !reflect.DeepEqual(newAxis, expectAxis2) {
 		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis2), SprintDiscreteAxis(newAxis))
+	}
+}
+
+func TestBinaryCompress(t *testing.T) {
+	startKey := ""
+	uint64List := []uint64{4,     0,  10,   2,   3,   3,   0,   7,  11,   5, 1}
+	endKeyList := []string{"a", "b", "d", "e", "h", "i", "k", "l", "t", "w", "z"}
+	endTime := time.Now()
+	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
+
+	expectUint64List := []uint64{ 10,   3,   0,  11,   1}
+	expectEndKeyList := []string{"d", "i", "k", "w", "z"}
+	axis.BinaryCompress(5)
+	expectAxis := BuildDiscreteAxis(startKey, expectEndKeyList, expectUint64List, endTime)
+	if !reflect.DeepEqual(axis, expectAxis) {
+		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis), SprintDiscreteAxis(axis))
 	}
 }
 

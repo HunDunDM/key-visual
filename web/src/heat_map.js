@@ -1,5 +1,5 @@
 import {dataPreferenceEnum, statPreferenceEnum, heat_map_colors, heat_map_gamma, label_colors} from "./config";
-
+y
 function normalize(channel) {
   return Math.pow(channel / 255, heat_map_gamma);
 }
@@ -57,7 +57,7 @@ export function markColor(labels) {
     if (j > 0 && names.length === labels[j - 1].labels.length) {
       equal = true;
       names.forEach((name, i) => {
-        if (name !== labels[j].labels[i]) {
+        if (name !== labels[j-1].labels[i]) {
           equal = false;
         }
       });
