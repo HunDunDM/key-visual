@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/hex"
-	"fmt"
 )
 
 type regionInfo struct {
@@ -15,9 +14,6 @@ type regionInfo struct {
 	ReadKeys     uint64 `json:"read_keys,omitempty"`
 }
 
-func (r *regionInfo) String() string {
-	return fmt.Sprintf("[%s, %s)", r.StartKey, r.EndKey)
-}
 
 func scanRegions() []*regionInfo {
 	var key []byte

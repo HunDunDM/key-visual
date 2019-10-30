@@ -232,13 +232,12 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 	//time范围上截取信息
 	start := startTime.Unix()
 	end := endTime.Unix()
-	limit := (end-start)/60 + 1
 	var startBuf = make([]byte, 8)
 	var endBuf = make([]byte, 8)
 	binary.BigEndian.PutUint64(startBuf, uint64(start))
 	binary.BigEndian.PutUint64(endBuf, uint64(end))
 	s.RLock()
-	_, rangeValues, _ := s.LoadRange(startBuf, endBuf, int(limit))
+	_, rangeValues, _ := s.LoadRange(startBuf, endBuf)
 	s.RUnlock()
 	if rangeValues == nil || len(rangeValues) == 0 {
 		return nil
@@ -280,6 +279,7 @@ func (s *Stat) RangeMatrix(startTime time.Time, endTime time.Time, startKey stri
 		}
 		rangeTimePlane.Axes = append(rangeTimePlane.Axes, &newAxis)
 	}
+	rangeTimePlane.StartTime = rangeTimePlane.Axes[0].EndTime.Add(-*interval)
 	//key范围上截取信息
 	for i := 0; i < len(rangeTimePlane.Axes); i++ {
 		tempAxis := rangeTimePlane.Axes[i]

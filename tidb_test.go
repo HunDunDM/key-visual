@@ -10,11 +10,11 @@ func TestUpdateAndLoadTables(t *testing.T) {
 	tables.LeveldbStorage, _ = NewLeveldbStorage(testtablepath)
 	updateTables()
 	tablesBefore := loadTables()
-	tables.LeveldbStorage.Close()
+	tables.Close()
 	db, err := leveldb.OpenFile(testtablepath, nil)
 	perr(err)
 	tables.LeveldbStorage = &LeveldbStorage{db}
-
+	defer tables.LeveldbStorage.Close()
 	tablesAfter := loadTables()
 
 	if !reflect.DeepEqual(tablesBefore, tablesAfter) {

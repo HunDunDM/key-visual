@@ -14,6 +14,7 @@ type LeveldbStorage struct {
 func NewLeveldbStorage(path string) (*LeveldbStorage, error) {
 	db, err := leveldb.OpenFile(path, nil)
 	if err != nil {
+		perr(err)
 		return nil, err
 	}
 	return &LeveldbStorage{db}, nil
@@ -32,17 +33,17 @@ func (db *LeveldbStorage) Load(key []byte) (string, error) {
 func (db *LeveldbStorage) Save(key, value []byte) error {
 	return db.Put(key, value, nil)
 }
-func (db *LeveldbStorage) search(k []byte) iterator.Iterator {
+func (db *LeveldbStorage) Search(k []byte) iterator.Iterator {
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
-		if string(iter.Key()) < string(k) {
+		if string(iter.Key()) >= string(k) {
 			return iter
 		}
 	}
 	iter.Release()
 	return nil
 }
-func (db *LeveldbStorage) traversal() (allValues []string) {
+func (db *LeveldbStorage) Traversal() (allValues []string) {
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {
 		allValues = append(allValues, string(iter.Value()))
@@ -52,28 +53,25 @@ func (db *LeveldbStorage) traversal() (allValues []string) {
 }
 
 // Range gets a range of value for a given key range.
-func (db *LeveldbStorage) LoadRange(startKey, endKey []byte, limit int) ([]string, []string, error) {
-	startIter := db.search(startKey)
-	endIter := db.search(endKey)
-	if endIter == nil {
-		return nil, nil, errors.New("endTime too early")
-	}
-	isStartNil := false
+func (db *LeveldbStorage) LoadRange(startKey, endKey []byte) ([]string, []string, error) {
+	startIter := db.Search(startKey)
+	endIter := db.Search(endKey)
 	if startIter == nil {
-		isStartNil = true
+		return nil, nil, errors.New("startTime too late")
 	}
-	iter := endIter
-	keys := make([]string, 0, limit)
-	values := make([]string, 0, limit)
-	count := 0
+	isEndNil := false
+	if endIter == nil {
+		isEndNil = true
+	}
+	iter := startIter
+	keys := make([]string, 0)
+	values := make([]string, 0)
+	keys = append(keys, string(iter.Key()))
+	values = append(values, string(iter.Value()))
 	for iter.Next() {
-		if count >= limit {
-			break
-		}
 		keys = append(keys, string(iter.Key()))
 		values = append(values, string(iter.Value()))
-		count++
-		if !isStartNil && string(iter.Key()) == string(startIter.Key()) {
+		if !isEndNil && string(iter.Key()) == string(endIter.Key()) {
 			break
 		}
 	}

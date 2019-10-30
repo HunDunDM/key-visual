@@ -16,6 +16,8 @@ var (
 	pdAddr = flag.String("pd", "http://172.16.4.191:8010", "PD address")
 	//TiDB服务器地址
 	tidbAddr = flag.String("tidb", "http://172.16.4.191:10080", "TiDB Address")
+	//interval
+	interval  = flag.Duration("I", time.Minute, "Interval to collect metrics")
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +54,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func updateStat(ctx context.Context) {
 	//ticker := time.NewTicker(time.Minute)
-	ticker := time.NewTicker(10*time.Second)
+	ticker := time.NewTicker(*interval)
 	defer ticker.Stop()
 	for {
 		select {

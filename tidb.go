@@ -48,7 +48,7 @@ type TablesStore struct {
 func loadTables() []*Table {
 	tableSlice := make([]*Table, 0)
 	tables.RLock()
-	allValue := tables.traversal()
+	allValue := tables.Traversal()
 	tables.RUnlock()
 	for _, v := range allValue {
 		var table Table
