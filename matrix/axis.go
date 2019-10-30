@@ -5,12 +5,11 @@ import (
 	"time"
 )
 
-// 稀疏key轴
+// a DiscreteAxis is an abstract of all the regionInfos collection at a certain time
 type DiscreteAxis struct {
-	StartKey string  `json:"start_key"` // 第一条Line的StartKey
-	Lines    []*Line `json:"lines"`
-	// StartTime time.Time // EndTime from the previous DiscreteAxis
-	EndTime time.Time `json:"end_time"` // 该key轴的time坐标
+	StartKey string    `json:"start_key"` // the first line's startKey
+	Lines    []*Line   `json:"lines"`
+	EndTime  time.Time `json:"end_time"` // the last line's endTime
 }
 
 type DiscreteKeys []string
@@ -30,9 +29,9 @@ func (axis *DiscreteAxis) Clone() *DiscreteAxis {
 	return newAxis
 }
 
-// 生成阈值，并从小到大排序
+// generate thresholds and sort them from small to big
 func (axis *DiscreteAxis) GenerateThresholds() []uint64 {
-	// 使用map去重
+	// use map to delete duplicated ones
 	thresholdsSet := make(map[uint64]struct{}, len(axis.Lines))
 	for _, line := range axis.Lines {
 		thresholdsSet[line.GetThreshold()] = struct{}{}
@@ -46,37 +45,7 @@ func (axis *DiscreteAxis) GenerateThresholds() []uint64 {
 	return thresholds
 }
 
-// 以指定阈值合并低于该信息量的线段
-func (axis *DiscreteAxis) DeNoise(threshold uint64) {
-	newAxis := make([]*Line, 0)
-	// value小于threshold且相邻的“线段”可以合并
-	// 相邻的且value相等的“线段”可以合并
-	isLastLess := false      //标志上一个line的value是否小于threshold
-	var lastIndex int64 = -1 //上一个线段的索引
-	for _, line := range axis.Lines {
-		if line.Useless(threshold) {
-			if isLastLess { //若前一个线段也小于阈值，做Merge操作
-				newAxis[len(newAxis)-1].Value.Merge(line.Value)
-				newAxis[len(newAxis)-1].EndKey = line.EndKey
-			} else {
-				isLastLess = true
-				newAxis = append(newAxis, line)
-			}
-		} else { //遇到大于阈值的线段
-			isLastLess = false
-			if lastIndex == -1 || !line.Value.Equal(axis.Lines[lastIndex].Value) {
-				newAxis = append(newAxis, line)
-			} else { //说明此值与上一个的值相等
-				newAxis[len(newAxis)-1].Value.Merge(line.Value)
-				newAxis[len(newAxis)-1].EndKey = line.EndKey
-			}
-		}
-		lastIndex++
-	}
-	axis.Lines = newAxis
-}
-
-// 判断values在阈值为threshold的情况下能否合并
+// check if we can merge at the certain threshold
 func IsMerge(values []uint64, threshold uint64) bool {
 	if len(values) < 2 {
 		return true
@@ -90,7 +59,7 @@ func IsMerge(values []uint64, threshold uint64) bool {
 		min = values[1]
 		max = values[0]
 	}
-	// 找到切片values中的最大值和最小值
+	// find the maximum and minimum in values slice
 	for i := 2; i < len(values); i++ {
 		if values[i] > max {
 			max = values[i]
@@ -98,7 +67,7 @@ func IsMerge(values []uint64, threshold uint64) bool {
 			min = values[i]
 		}
 	}
-	// 最大值与最小值的差和阈值比较
+	// compare the difference between maximum and minimum with threshold
 	if max-min <= threshold {
 		return true
 	} else {
@@ -106,9 +75,9 @@ func IsMerge(values []uint64, threshold uint64) bool {
 	}
 }
 
-// 计算以指定阈值压缩桶时，最终桶的数量
+// calculate the amount of buckets when compressing at a certain threshold
 func (axis *DiscreteAxis) Effect(step int, threshold uint64) uint {
-	// 若步长step个线段的最大值和最小值的差值小于等于阈值threshold，则可以合并
+	// if 'step' lines' differences between maximum and minimum are all less than threshold, then the axis can be merged
 	if step <= 1 {
 		return uint(len(axis.Lines))
 	}
@@ -120,10 +89,10 @@ func (axis *DiscreteAxis) Effect(step int, threshold uint64) uint {
 			values = append(values, axis.Lines[i+j].Value.GetThreshold())
 		}
 		if IsMerge(values, threshold) {
-			// 若能合并，跳过步长step个line
+			// if we can merge, skip 'step' lines
 			i += step
 		} else {
-			// 否则，“窗口”往后移一格
+			// otherwise, the 'window' slides one block to the back
 			i++
 		}
 		// 清空values
@@ -133,9 +102,9 @@ func (axis *DiscreteAxis) Effect(step int, threshold uint64) uint {
 	return uint(num)
 }
 
-// 以指定的步长和阈值压缩axis
+// squash axis at certain step and threshold
 func (axis *DiscreteAxis) Squash(step int, threshold uint64) {
-	// 步长个线段的最大值和最小值的差值小于等于阈值threshold，则可以合并
+	// if 'step' lines' differences between maximum and minimum are all less than threshold, then the axis can be merged
 	if step <= 1 {
 		return
 	}
@@ -157,7 +126,7 @@ func (axis *DiscreteAxis) Squash(step int, threshold uint64) {
 			newAxis = append(newAxis, axis.Lines[i])
 			i++
 		}
-		// 清空values
+		// clear values
 		values = make([]uint64, 0, step)
 	}
 	axis.Lines = newAxis

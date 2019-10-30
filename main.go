@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	//服务器监听的 IP 地址和端口号
+	// the IP address and port number that this server listen on
 	addr = flag.String("addr", "0.0.0.0:8000", "Listening address")
-	//PD 服务器地址
+	// PD Server address
 	pdAddr = flag.String("pd", "http://172.16.4.191:8010", "PD address")
-	//TiDB服务器地址
+	// TiDB Server address
 	tidbAddr = flag.String("tidb", "http://172.16.4.191:10080", "TiDB Address")
-	//interval
-	interval  = flag.Duration("I", time.Minute, "Interval to collect metrics")
+	// the default interval between two data requests
+	interval = flag.Duration("I", time.Minute, "Interval to collect metrics")
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -28,9 +28,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	end := r.FormValue("endtime")
 	endTime := time.Now()
 	startTime := endTime.Add(-60 * time.Minute)
-	// tag参数表示哪种数据指标
+	// tag indicates the type of data request(e.g. read or write)
 	tag := r.FormValue("tag")
-	// mode参数表示数据统计的模式，如最大值、平均值
+	// mode indicates the mod of data statistics(e.g. max or average)
 	mode := r.FormValue("mode")
 
 	if start != "" {
@@ -44,7 +44,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if endKey == "" {
-		endKey = "~" //\126
+		endKey = "~" // \126, which is the biggest displayable character
 	}
 	matrix := generateHeatmap(startTime, endTime, startKey, endKey, tag, mode)
 	data, _ := json.Marshal(matrix)
@@ -53,7 +53,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateStat(ctx context.Context) {
-	//ticker := time.NewTicker(time.Minute)
+	// use ticker to get data at certain intervals
 	ticker := time.NewTicker(*interval)
 	defer ticker.Stop()
 	for {
@@ -70,7 +70,7 @@ func updateStat(ctx context.Context) {
 
 func main() {
 	flag.Parse()
-	// 循环更新数据
+	// update data loop
 	go updateStat(context.Background())
 	mux := http.NewServeMux()
 	mux.HandleFunc("/heatmaps", handler)
@@ -81,8 +81,7 @@ func main() {
 	handler := cors.Default().Handler(mux)
 
 	_ = http.ListenAndServe(*addr, handler)
-
+	// close the two levelDbs
 	globalRegionStore.Close()
-	// 关闭tableDb
 	tables.Close()
 }
