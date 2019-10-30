@@ -43,6 +43,8 @@ func (db *LeveldbStorage) Search(k []byte) iterator.Iterator {
 	iter.Release()
 	return nil
 }
+
+// Traversal return a traversal of the storage
 func (db *LeveldbStorage) Traversal() (allValues []string) {
 	iter := db.NewIterator(nil, nil)
 	for iter.Next() {

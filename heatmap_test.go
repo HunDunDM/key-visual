@@ -450,8 +450,8 @@ func TestChangeIntoHeatmap(t *testing.T) {
 
 	expect := &Heatmap{
 		Data: [][]interface{}{
-			[]interface{}{1, 2},
-			[]interface{}{3, 4},
+			{1, 2},
+			{3, 4},
 		},
 		Keys:  matrix.Keys,
 		Times: matrix.Times,
@@ -503,7 +503,7 @@ func TestGenerateHeatmap(t *testing.T) {
 	}
 
 	regions := []*regionInfo{
-		&regionInfo{
+		{
 			StartKey:     "a",
 			EndKey:       "b",
 			ReadBytes:    1,
@@ -511,7 +511,7 @@ func TestGenerateHeatmap(t *testing.T) {
 			WrittenBytes: 3,
 			WrittenKeys:  4,
 		},
-		&regionInfo{
+		{
 			StartKey:     "b",
 			EndKey:       "d",
 			ReadBytes:    2,
@@ -523,7 +523,7 @@ func TestGenerateHeatmap(t *testing.T) {
 	globalRegionStore.Append(regions)
 	time.Sleep(time.Second)
 	regions = []*regionInfo{
-		&regionInfo{
+		{
 			StartKey:     "a",
 			EndKey:       "b",
 			ReadBytes:    3,
@@ -531,7 +531,7 @@ func TestGenerateHeatmap(t *testing.T) {
 			WrittenBytes: 5,
 			WrittenKeys:  6,
 		},
-		&regionInfo{
+		{
 			StartKey:     "b",
 			EndKey:       "d",
 			ReadBytes:    4,
@@ -550,8 +550,8 @@ func TestGenerateHeatmap(t *testing.T) {
 
 	expect := &Heatmap{
 		Data: [][]interface{}{
-			[]interface{}{0, 1},
-			[]interface{}{2, 3},
+			{0, 1},
+			{2, 3},
 		},
 		Keys: []string{"a", "b", "d"},
 	}
@@ -577,8 +577,8 @@ func TestGenerateHeatmap(t *testing.T) {
 
 	expect = &Heatmap{
 		Data: [][]interface{}{
-			[]interface{}{4, 6},
-			[]interface{}{8, 10},
+			{4, 6},
+			{8, 10},
 		},
 		Keys: []string{"a", "b", "d"},
 	}
@@ -594,8 +594,8 @@ func TestGenerateHeatmap(t *testing.T) {
 
 	expect = &Heatmap{
 		Data: [][]interface{}{
-			[]interface{}{6, 8},
-			[]interface{}{10, 12},
+			{6, 8},
+			{10, 12},
 		},
 		Keys: []string{"a", "b", "d"},
 	}

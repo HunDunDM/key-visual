@@ -29,9 +29,3 @@ func TestRequests_request(t *testing.T) {
 		}
 	}
 }
-func TestRequests_dbRequest(t *testing.T) {
-	dbInfos := dbRequest(0)
-	if len(dbInfos) == 0 {
-		t.Fatalf("error dbInfo")
-	}
-}

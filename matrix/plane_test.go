@@ -36,7 +36,7 @@ func buildDiscreteMinutes(times []time.Time) []int {
 	return minutes
 }
 
-// 打印Matrix
+// print matrix
 func SprintMatrix(matrix *Matrix) string {
 	str := fmt.Sprintf("Keys: ")
 	for i := 0; i < len(matrix.Keys); i++ {
@@ -77,7 +77,7 @@ func TestGetDiscreteTimes(t *testing.T) {
 		t.Fatalf("expect %v, but got %v", expectMinutes, discreteMinutes)
 	}
 
-	//测试DiscretePlane中Axes为空的情况
+	// test the condition when DiscretePlane's Axes is empty
 	times = []int{0}
 	keys = [][]string{}
 	values = make([][]uint64, len(keys))
@@ -146,12 +146,12 @@ func TestTimesSquash(t *testing.T) {
 
 	times = []int{20, 15, 10}
 	keys = [][]string{
-		{"",  "b", "c", "e", "f", "h", "i", "k", "l", "m", "o", },
-		{"",  "a", "d", "e", "i", "k", "n", "o", "q", "r",},
+		{"", "b", "c", "e", "f", "h", "i", "k", "l", "m", "o"},
+		{"", "a", "d", "e", "i", "k", "n", "o", "q", "r"},
 	}
 	values = [][]uint64{
-		{       1,   5,   5,   6,   6,  10,   7,   6,   0,   9, },
-		{       0,   5,   0,   3,   7,   9,   6,   6,   4,},
+		{1, 5, 5, 6, 6, 10, 7, 6, 0, 9},
+		{0, 5, 0, 3, 7, 9, 6, 6, 4},
 	}
 	expect := BuildDiscretePlane(times, keys, values)
 	expect.StartTime = startTime
@@ -177,33 +177,6 @@ func TestPixel(t *testing.T) {
 		{0, 3, 7, 9, 5},
 	}
 	plane := BuildDiscretePlane(times, keys, values)
-	//{"b", "c", "e", "l", "m", "o"},
-	//{"",  "b", "f", "h", "i", "k"},
-	//{"",  "b", "c", "e", "f", "h", "i", "k", "l", "m", "o", }
-	//{       1,   5,   5,   6,   6,  10,   7,   6,   0,   9, }
-
-	//{"a", "d", "i", "n", "q", "r"},
-	//{"",  "e", "i", "k", "n", "o"},
-	//{"",  "a", "d", "e", "i", "k", "n", "o", "q", "r",}
-	//{       0,   5,   0,   3,   7,   9,   6,   6,   4,}
-
-	//基轴DeNoise 前
-	//{"", "a", "b", "c", "d", "e", "f", "h", "i", "k", "l", "m", "n", "o", "q", "r",}
-	//{      1,   5,   5,   5,   5,   6,   6,  10,   7,   9,   9,   9,   9,  6,   4, }
-
-	//threshold := 6
-	// 基轴DeNiose 后
-	//{"", "c", "f", "k", "n", "o", "r",}
-	//{      5,  6,  10,   9,   9,   6,}
-
-	//1
-	//{"",  "b", "c", "e", "f", "h", "i", "k", "l", "m", "o", }
-	//{       1,   5,   5,   6,   6,  10,   7,   6,   0,   9, }
-	//{      5,  6,   10,   9,   9,   0,}
-	//2
-	//{"",  "a", "d", "e", "i", "k", "n", "o", "q", "r",}
-	//{       0,   5,   0,   3,   7,   9,   6,   6,   4,}
-	//{      5,   5,   7,   9,   6,   6,}
 	timeN := DiscreteTimes{plane.StartTime, plane.Axes[1].EndTime, plane.Axes[3].EndTime}
 	keyM := DiscreteKeys{"", "c", "f", "k", "n", "o", "r"}
 

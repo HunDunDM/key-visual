@@ -34,7 +34,7 @@ type MultiUnit struct {
 	Average MultiValue `json:"average"`
 }
 
-// 返回两个数中的较大值
+// return the bigger one of two values
 func Max(a uint64, b uint64) uint64 {
 	if a > b {
 		return a

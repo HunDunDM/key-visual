@@ -140,25 +140,24 @@ func (axis *DiscreteAxis) BinaryCompress(m int) {
 		return
 	}
 	if len(axis.Lines) > m {
-		//压缩处理，将key轴line的个数压缩到接近m
+		// compress the amount of lines of key axis to 'm'
 		thresholdSet := make(map[uint64]struct{}, len(axis.Lines))
-		//去重
+		// duplicate removal
 		for _, line := range axis.Lines {
 			thresholdSet[line.GetThreshold()] = struct{}{}
 		}
 
 		thresholds := axis.GenerateThresholds()
-		// 步长向上取整
+		// ceil step
 		step := len(axis.Lines) / m
 		if step*m != len(axis.Lines) {
 			step++
 		}
-		//二分查找
+		// binary search
 		i := sort.Search(len(thresholds), func(i int) bool {
 			return axis.Effect(step, thresholds[i]) <= uint(m)
 		})
-
-		//取最相近的
+		// choose the closest one
 		threshold1 := thresholds[i]
 		num1 := axis.Effect(step, threshold1)
 		if i > 0 && num1 != uint(m) {
@@ -175,9 +174,9 @@ func (axis *DiscreteAxis) BinaryCompress(m int) {
 	}
 }
 
-// 以指定的离散Key序列重采样,
-// 只采样line，时间不采样
-// dst的划分至少和axis一样细
+// use the certain discrete key sets to resample
+// only at the key-dimension, not at the time-dimension
+// the partition of dst should be at least as thin as axis
 func (axis *DiscreteAxis) ReSample(dst *DiscreteAxis) {
 	srcKeys := axis.GetDiscreteKeys()
 	dstKeys := dst.GetDiscreteKeys()
@@ -186,14 +185,15 @@ func (axis *DiscreteAxis) ReSample(dst *DiscreteAxis) {
 	startIndex := 0
 	endIndex := 0
 	for i := 1; i < lengthSrc; i++ {
-		// 找到源key数组每一个值在目标key数组中的起始索引和结束索引,以计算它在目标数组中会分裂成几段
+		// find the startIndex and endIndex of every value in the source key array
+		// to calculate how many parts it will split into in the destination array
 		for j := endIndex; j < lengthDst; j++ {
 			if dstKeys[j] == srcKeys[i-1] {
 				startIndex = j
 			}
 			if dstKeys[j] == srcKeys[i] {
 				endIndex = j
-				// 由于keys是递增的所以这里可以直接break
+				// Because keys are increasing, here we can break directly
 				break
 			}
 		}
@@ -208,42 +208,41 @@ func (axis *DiscreteAxis) ReSample(dst *DiscreteAxis) {
 	}
 }
 
-// 将axis的值投影到dst
-// 传入的dst必须是0值，dst的段数往往比axis少
+// project the value of axis on dst
+// the formal parameter dst is empty
 func (axis *DiscreteAxis) DeProjection(dst *DiscreteAxis) {
 	lengthSrc := len(axis.Lines)
 	lengthDst := len(dst.Lines)
 	var DstI int
 	var SrcI int
-	// 对DstI和SrcI处理，确保axis和dst的第SrcI和DstI段line有重合
+	// process DstI and SrcI so that the SrcI part of axis and the DstI part of dst have overlap
 	if axis.StartKey < dst.StartKey {
 		DstI = 0
-		// axis中寻找第一个EndKey比dst.StartKey大的line
+		// find the first line that has EndKey bigger than dst.EndKey
 		SrcI = sort.Search(lengthSrc, func(i int) bool {
 			return axis.Lines[i].EndKey > dst.StartKey
 		})
 	} else {
-		// 此时axis.StartKey >= dst.StartKey
-		// dst中寻找第一个EndKey比axis.StartKey大的line
+		// at this time, axis.StartKey >= dst.StartKey
+		// find the first line that has EndKey bigger than dst.EndKey
 		DstI = sort.Search(lengthDst, func(i int) bool {
 			return dst.Lines[i].EndKey > axis.StartKey
 		})
 	}
-
-	// 源轴中的一段投影到目标轴dst的上索引范围
+	// the index scope of a part of source axis's projection on dst axis
 	startIndex := DstI
 	var endIndex int
 	for DstI < lengthDst && SrcI < lengthSrc {
-		// 找到axis每一段在dst的投影
+		// find every part of axis's projection on dst
 		if axis.Lines[SrcI].EndKey <= dst.Lines[DstI].EndKey {
 			endIndex = DstI
-			//找到投影的范围
+			// find the projection's scope
 			for i := startIndex; i <= endIndex; i++ {
 				dst.Lines[i].Value.Merge(axis.Lines[SrcI].Value)
 			}
 			if axis.Lines[SrcI].EndKey == dst.Lines[DstI].EndKey {
 				DstI++
-				// 可能后面还存在相等的endKey，实际应该不会出现这种情况
+				// maybe there exists the same key in the behind
 				for DstI < lengthDst && dst.Lines[DstI].EndKey == axis.Lines[SrcI].EndKey {
 					dst.Lines[DstI].Value.Merge(axis.Lines[SrcI].Value)
 					DstI++
@@ -258,7 +257,7 @@ func (axis *DiscreteAxis) DeProjection(dst *DiscreteAxis) {
 	}
 }
 
-// 获取离散化后的key序列，含StartKey
+// get the key sets after discretizatin
 func (axis *DiscreteAxis) GetDiscreteKeys() DiscreteKeys {
 	discreteKeys := make(DiscreteKeys, 0)
 	discreteKeys = append(discreteKeys, axis.StartKey)
@@ -268,7 +267,7 @@ func (axis *DiscreteAxis) GetDiscreteKeys() DiscreteKeys {
 	return discreteKeys
 }
 
-// 在axis中获取(startKey, endKey]范围的line
+// get the line of scope [startKey, endKey) in axis
 func (axis *DiscreteAxis) Range(startKey string, endKey string) *DiscreteAxis {
 	newAxis := &DiscreteAxis{
 		StartKey: "",

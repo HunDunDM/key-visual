@@ -25,8 +25,8 @@ var pads = make([]byte, encGroupSize)
 // EncodeBytes guarantees the encoded value is in ascending order for comparison,
 // encoding with the following rule:
 //  [group1][marker1]...[groupN][markerN]
-//  group is 8 bytes slice which is padding with 0.//每8个字节
-//  marker is `0xFF - padding 0 count`//减去0的个数
+//  group is 8 bytes slice which is padding with 0.
+//  marker is `0xFF - padding 0 count`
 // For example:
 //   [] -> [0, 0, 0, 0, 0, 0, 0, 0, 247]
 //   [1, 2, 3] -> [1, 2, 3, 0, 0, 0, 0, 0, 250]

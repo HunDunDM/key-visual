@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-//自定义一个实现接口Value的类型，用于测试
+// define a type which implements Value interface, used by test
 type ValueUint64 struct {
 	uint64
 }
 
-// 返回两个数中的较大值
+// return the bigger one of two numbers
 func max(a uint64, b uint64) uint64 {
 	if a > b {
 		return a
@@ -22,7 +22,6 @@ func max(a uint64, b uint64) uint64 {
 
 func (v *ValueUint64) Split(count int) Value {
 	res := *v
-	//res.uint64 /= uint64(count)
 	return &res
 }
 func (v *ValueUint64) Merge(other Value) {
@@ -54,7 +53,7 @@ func (v *ValueUint64) Equal(other Value) bool {
 	return *v == *another
 }
 
-// 打印DiscreteAxis
+// print DiscreteAxis
 func SprintDiscreteAxis(axis *DiscreteAxis) string {
 	str := fmt.Sprintf("StartKey: %v\n", axis.StartKey)
 	for _, line := range axis.Lines {
@@ -83,7 +82,7 @@ func TestClone(t *testing.T) {
 	endTime := time.Now()
 	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
 	axisClone := axis.Clone()
-	//克隆的数据是否相等
+	// check if the data after clone is the same
 	if !reflect.DeepEqual(axisClone, axis) {
 		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(axisClone), SprintDiscreteAxis(axis))
 	}
@@ -91,7 +90,7 @@ func TestClone(t *testing.T) {
 	bigUint64 := uint64(100000)
 	expectUint64 := axis.Lines[0].GetThreshold()
 	axisClone.Lines[0].Merge(&ValueUint64{bigUint64})
-	//修改后不能改变原来的数据
+	// after change, the data should not be modified
 	if reflect.DeepEqual(axis, axisClone) {
 		t.Fatalf("expect %v, but got %v", expectUint64, bigUint64)
 	}
@@ -158,7 +157,7 @@ func TestSquash(t *testing.T) {
 	endTime := time.Now()
 	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
 
-	//第一遍测试
+	// the first test
 	threshold1 := uint64(3)
 	step1 := 3
 	expectUint64List1 := []uint64{4, 0, 10, 3, 0, 7, 11, 5, 1}
@@ -171,7 +170,7 @@ func TestSquash(t *testing.T) {
 
 	/**********************************************************/
 	newAxis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
-	//第二遍测试
+	// the second test
 	threshold2 := uint64(6)
 	step2 := 3
 	expectUint64List2 := []uint64{4, 0, 10, 3, 0, 11, 1}
@@ -185,12 +184,12 @@ func TestSquash(t *testing.T) {
 
 func TestBinaryCompress(t *testing.T) {
 	startKey := ""
-	uint64List := []uint64{4,     0,  10,   2,   3,   3,   0,   7,  11,   5, 1}
+	uint64List := []uint64{4, 0, 10, 2, 3, 3, 0, 7, 11, 5, 1}
 	endKeyList := []string{"a", "b", "d", "e", "h", "i", "k", "l", "t", "w", "z"}
 	endTime := time.Now()
 	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
 
-	expectUint64List := []uint64{ 10,   3,   0,  11,   1}
+	expectUint64List := []uint64{10, 3, 0, 11, 1}
 	expectEndKeyList := []string{"d", "i", "k", "w", "z"}
 	axis.BinaryCompress(5)
 	expectAxis := BuildDiscreteAxis(startKey, expectEndKeyList, expectUint64List, endTime)
@@ -217,7 +216,7 @@ func TestReSample(t *testing.T) {
 		t.Fatalf("expect\n%v\nbut got\n%v", SprintDiscreteAxis(expectAxis), SprintDiscreteAxis(desAxis))
 	}
 
-	//对空轴的情况测试
+	// test the empty axis condition
 	axis = BuildDiscreteAxis("\n2", []string{}, []uint64{}, endTime)
 	expectAxis = desAxis.Clone()
 	axis.ReSample(desAxis)
@@ -230,18 +229,14 @@ func TestDeProjection(t *testing.T) {
 	startKey := "\n"
 	uint64List := []uint64{0, 0, 10, 2, 4, 3, 0, 7, 11, 2}
 	endKeyList := []string{"b", "c", "d", "h", "i", "m", "q", "t", "x", "z"}
-	//uint64List := []uint64 {       1,   5,   5,   6,   6,  10,   7,   6,   0,   9, }
-	//endKeyList := []string {"b", "c", "e", "f", "h", "i", "k", "l", "m", "o", }
 	endTime := time.Now()
 	axis := BuildDiscreteAxis(startKey, endKeyList, uint64List, endTime)
 
 	desStartKey := ""
 	desKeyList := []string{"a", "c", "d", "d", "f", "g", "m", "z"}
-	//desKeyList := []string {"h", "i", "k", "l", "m", "n", "o", "r",}
 	desUint64List := []uint64{0, 0, 0, 0, 0, 0, 0, 0}
 
 	expectUint64List := []uint64{0, 0, 10, 10, 2, 2, 4, 11}
-	//expectUint64List := []uint64 {      6,  10,   7,   6,   0,   9,   9,   0,}
 	desAxis := BuildDiscreteAxis(desStartKey, desKeyList, desUint64List, endTime)
 	expectAxis := BuildDiscreteAxis(desStartKey, desKeyList, expectUint64List, endTime)
 
@@ -264,7 +259,7 @@ func TestGetDiscreteKeys(t *testing.T) {
 		t.Fatalf("expect %v, but got %v", expectKeys, keys)
 	}
 
-	//测试DiscreteAxis中Lines为空的情况
+	// test the condition that the Lines in DiscreteAxis is empty
 	axis.Lines = []*Line{}
 	expectKeys = DiscreteKeys{""}
 	keys = axis.GetDiscreteKeys()

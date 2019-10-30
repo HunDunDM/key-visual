@@ -13,38 +13,37 @@ type DiscretePlane struct {
 type DiscreteTimes []time.Time
 
 type Matrix struct {
-	Data   [][]Value     `json:"data"`   // 二维数据图
-	Keys   DiscreteKeys  `json:"keys"`   // 纵坐标
-	Times  DiscreteTimes `json:"times"`  // 横坐标
+	Data  [][]Value     `json:"data"`  // two-dimension data map
+	Keys  DiscreteKeys  `json:"keys"`  // Y-axis of matrix
+	Times DiscreteTimes `json:"times"` // X-axis of matrix
 }
 
-// 获取离散化后的time序列，含StartTime
+// get the time sets after discretization, including StartTime
 func (plane *DiscretePlane) GetDiscreteTimes() DiscreteTimes {
 	discreteTimes := make(DiscreteTimes, 0, len(plane.Axes)+1)
 	discreteTimes = append(discreteTimes, plane.StartTime)
 	for _, axis := range plane.Axes {
-		if axis != nil { //实际应该不会出现
+		if axis != nil {
 			discreteTimes = append(discreteTimes, axis.EndTime)
 		}
 	}
 	return discreteTimes
 }
 
-// 把多个时间上连续的key轴压缩为一个key轴
+// compress consecutive key axises of different time into one key axis
 func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) {
 	startTime = plane.StartTime
 	axis = new(DiscreteAxis)
 	length := len(plane.Axes)
 	if length == 0 {
-		// 此种情况实际应该不会出现
 		return axis, startTime
 	}
 	axis.EndTime = plane.Axes[length-1].EndTime
-	// keysSet用于去重
+	// keysSet is used to remove duplication
 	keysSet := make(map[string]struct{}, len(plane.Axes[0].Lines))
 	for _, axis := range plane.Axes {
 		if len(axis.Lines) == 0 {
-			//忽略空的key轴
+			// ignore empty key axis
 			continue
 		}
 		keysSet[axis.StartKey] = struct{}{}
@@ -58,8 +57,6 @@ func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) 
 		allKeys = append(allKeys, key)
 	}
 	sort.Strings(allKeys)
-
-	// 初始一个Value, 用于初始化
 	var defaultValue Value
 	for _, axis := range plane.Axes {
 		for _, Line := range axis.Lines {
@@ -71,11 +68,10 @@ func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) 
 		}
 	}
 	if defaultValue == nil {
-		// 此种情况实际应该不会出现
 		return axis, startTime
 	}
 	if len(allKeys) == 0 {
-		//此时Compact是个空轴，StartKey实际无意义
+		// here StartKey is an empty key axis with no meaning
 		axis.StartKey = ""
 	} else {
 		axis.StartKey = allKeys[0]
@@ -98,18 +94,18 @@ func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) 
 	return axis, startTime
 }
 
-// 时间轴上压缩成n个
+// compress the time axises into 'n' ones
 func (plane *DiscretePlane) TimesSquash(n int) *DiscretePlane {
-	if n==0 {
+	if n == 0 {
 		return nil
 	}
 	newPlane := &DiscretePlane{
 		StartTime: plane.StartTime,
 	}
 
-	//时间轴上，均分压缩
+	// divide time axises equally and then compress
 	if len(plane.Axes) >= n {
-		//压缩分为两部走，前一部分step较大（大1），后一部分step较小
+		// compression are two processes, the first one has a bigger step, the next one has a smaller step
 		step2 := len(plane.Axes) / n
 		step1 := step2 + 1
 		n1 := len(plane.Axes) % n
@@ -124,7 +120,7 @@ func (plane *DiscretePlane) TimesSquash(n int) *DiscretePlane {
 				step = step2
 				index = n1*step1 + (i-n1)*step2
 			}
-			// 将step个key轴合并
+			// merge the step key axises
 			tempPlane := &DiscretePlane{}
 			if i == 0 {
 				tempPlane.StartTime = plane.StartTime
@@ -136,8 +132,7 @@ func (plane *DiscretePlane) TimesSquash(n int) *DiscretePlane {
 				tempPlane.Axes[i] = plane.Axes[index+i]
 			}
 			axis, _ := tempPlane.Compact()
-
-			//将合并后的key插入newPlane
+			// insert the key after merge into newPlane
 			newPlane.Axes = append(newPlane.Axes, axis)
 		}
 	} else {
@@ -149,23 +144,23 @@ func (plane *DiscretePlane) TimesSquash(n int) *DiscretePlane {
 	return newPlane
 }
 
-// 给定推荐值n、m，将稀疏平面像素化为近似n*m的矩阵
+// pixel the plane into a n*m matrix at the given n and m
 func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 	if n == 0 || m == 0 {
 		return nil
 	}
-	//时间轴上压缩
+	// compress on the time axises
 	newPlane := plane.TimesSquash(n)
 
-	//生成统一的key轴
+	// generate a united key axis
 	axis, _ := newPlane.Compact()
 	axis.BinaryCompress(m)
 
-	//重置目标轴的value为0值
+	// reset destination axis's value into 0
 	for i := 0; i < len(axis.Lines); i++ {
 		axis.Lines[i].Reset()
 	}
-	// 依次对各个轴做投影
+	// for each key axis, do projection
 	for i := 0; i < len(newPlane.Axes); i++ {
 		axisClone := axis.Clone()
 		newPlane.Axes[i].DeProjection(axisClone)
@@ -173,7 +168,7 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 		newPlane.Axes[i] = axisClone
 	}
 
-	//生成Matrix
+	// generate matrix
 	discreteTimes := newPlane.GetDiscreteTimes()
 	discreteKeys := axis.GetDiscreteKeys()
 	timesLen := len(discreteTimes) - 1
