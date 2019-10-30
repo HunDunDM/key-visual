@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestRequest_request(t *testing.T) {
+func TestRequests_request(t *testing.T) {
 	var infos regionsInfo
 	uri := fmt.Sprintf("pd/api/v1/regions/key?key=%s&limit=%d", "", 1024)
 	request(*pdAddr, uri, &infos)
@@ -27,5 +27,11 @@ func TestRequest_request(t *testing.T) {
 		if tableInfos == nil {
 			t.Fatalf("error request tableInfo")
 		}
+	}
+}
+func TestRequests_dbRequest(t *testing.T) {
+	dbInfos := dbRequest(0)
+	if len(dbInfos) == 0 {
+		t.Fatalf("error dbInfo")
 	}
 }

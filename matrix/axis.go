@@ -95,7 +95,7 @@ func (axis *DiscreteAxis) Effect(step int, threshold uint64) uint {
 			// otherwise, the 'window' slides one block to the back
 			i++
 		}
-		// 清空values
+		// clear values
 		values = make([]uint64, 0, step)
 		num++
 	}
@@ -132,9 +132,10 @@ func (axis *DiscreteAxis) Squash(step int, threshold uint64) {
 	axis.Lines = newAxis
 }
 
-// 二分阈值的方式，压缩axis，让Bucket的个数尽量接近m
+// use binary search to find threshold, compress axis so that the amount of buckets can be as close as
+// possible to 'm'
 func (axis *DiscreteAxis) BinaryCompress(m int) {
-	//对key轴压缩
+	// compress key axis
 	if m == 0 {
 		return
 	}
