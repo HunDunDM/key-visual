@@ -28,6 +28,4 @@ func TestRequest_request(t *testing.T) {
 			t.Fatalf("error request tableInfo")
 		}
 	}
-
-
 }

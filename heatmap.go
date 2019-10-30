@@ -194,7 +194,6 @@ func generateHeatmap(startTime time.Time, endTime time.Time, startKey string, en
 	newMatrix := rangePlane.Pixel(50, 80)
 	heatmap := ChangeIntoHeatmap(newMatrix)
 	return MatchTable(heatmap)
-
 }
 
 func ChangeIntoHeatmap(matrix *matrix.Matrix) *Heatmap {

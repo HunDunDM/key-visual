@@ -2,7 +2,9 @@ package main
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
+	"time"
 )
 
 func TestMax(t *testing.T) {
@@ -229,164 +231,219 @@ func TestSingleUnit_Split(t *testing.T) {
 		Mode: 0,
 	}
 	dst := src.Split(2)
-	check(t, dst.(*MultiUnit), &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			50, 100, 150, 200,
-		},
-	})
-	dst = src.Split(5)
-	check(t, dst.(*MultiUnit), &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			20, 40, 60, 80,
-		},
-	})
-}
-func TestSingleUnit_Merge(t *testing.T) {
-	src := &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			100, 200, 300, 400,
-		},
+	result := dst.(*SingleUnit)
+	expect := &SingleUnit{
+		Value: 3,
+		Mode: 0,
 	}
-	dst := &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			20, 40, 60, 80,
-		},
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
+
+	src.Mode = 1
+	dst = src.Split(2)
+	result = dst.(*SingleUnit)
+	expect = &SingleUnit{
+		Value: 1,
+		Mode: 1,
+	}
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
+}
+
+func TestSingleUnit_Merge(t *testing.T) {
+	src := &SingleUnit{
+		Value: 3,
+		Mode: 0,
+	}
+	dst := &SingleUnit{
+		Value: 4,
+		Mode: 0,
 	}
 	src.Merge(dst)
-	check(t, src, &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			120, 240, 360, 480,
-		},
-	})
+
+	expect := &SingleUnit{
+		Value: 4,
+		Mode: 0,
+	}
+	if !reflect.DeepEqual(expect, src) {
+		t.Fatalf("expect %v, but got %v", expect, src)
+	}
+
+	src = &SingleUnit{
+		Value: 3,
+		Mode: 1,
+	}
+	dst = &SingleUnit{
+		Value: 4,
+		Mode: 1,
+	}
+	src.Merge(dst)
+
+	expect = &SingleUnit{
+		Value: 7,
+		Mode: 1,
+	}
+	if !reflect.DeepEqual(expect, src) {
+		t.Fatalf("expect %v, but got %v", expect, src)
+	}
 }
+
 func TestSingleUnit_Useless(t *testing.T) {
-	src := &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			100, 200, 300, 400,
-		},
+	src := &SingleUnit{
+		Value: 3,
 	}
-	src2 := &MultiUnit{
-		Max: MultiValue{
-			70, 80, 30, 40,
-		},
-		Average: MultiValue{
-			100, 200, 300, 400,
-		},
+
+	result := src.Useless(4)
+	expect := true
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
 	}
-	threshold := uint64(30)
-	check := func(src bool, dst bool) {
-		if src != dst {
-			t.Fatalf("useless() result not the same\n")
-		}
+
+	result = src.Useless(3)
+	expect = false
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
 	}
-	check(src.Useless(threshold), true)
-	check(src2.Useless(threshold), false)
 }
 
 func TestSingleUnit_GetThreshold(t *testing.T) {
-	src := []*MultiUnit{
-		{
-			Max: MultiValue{
-				10, 20, 30, 40,
-			},
-			Average: MultiValue{
-				100, 200, 300, 400,
-			},
-		},
-		{
-			Max: MultiValue{
-				70, 80, 30, 40,
-			},
-			Average: MultiValue{
-				100, 200, 300, 400,
-			},
-		},
-		{
-			Max: MultiValue{
-				50, 45, 40, 70,
-			},
-			Average: MultiValue{
-				100, 200, 300, 400,
-			},
-		},
+	src := &SingleUnit{
+		Value: 3,
 	}
-	var threshold uint64
-	for _, s := range src {
-		threshold = s.GetThreshold()
+
+	result := src.GetThreshold()
+	expect := uint64(3)
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
 	}
-	check := func(src uint64, dst uint64) {
-		if src != dst {
-			t.Fatalf("threshold not the same\n")
-		}
-	}
-	check(threshold, 50)
 }
+
 func TestSingleUnit_Clone(t *testing.T) {
-	src := &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			100, 200, 300, 400,
-		},
+	src := &SingleUnit{
+		Value: 3,
+		Mode: 1,
 	}
+
 	dst := src.Clone()
-	check(t, src, dst.(*MultiUnit))
+	result := dst.(*SingleUnit)
+	if !reflect.DeepEqual(src, result) {
+		t.Fatalf("expect %v, but got %v", src, result)
+	}
+
+	expect := &SingleUnit{
+		Value: 3,
+		Mode: 1,
+	}
+	src.Value = 10
+	if reflect.DeepEqual(src, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
 }
+
 func TestSingleUnit_Reset(t *testing.T) {
-	src := &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			100, 200, 300, 400,
-		},
+	src := &SingleUnit {
+		Value: 3,
+		Mode: 1,
 	}
 	src.Reset()
-	check(t, src, &MultiUnit{})
+	expect := &SingleUnit {
+		Value: 0,
+		Mode: 1,
+	}
+	if !reflect.DeepEqual(expect, src) {
+		t.Fatalf("expect %v, but got %v", expect, src)
+	}
 }
 
 func TestSingleUnit_Default(t *testing.T) {
-	src := &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			100, 200, 300, 400,
-		},
+	src := &SingleUnit {
+		Value: 3,
+		Mode: 1,
 	}
-	dst := src.Default()
-	check(t, dst.(*MultiUnit), &MultiUnit{})
+	result := src.Default()
+	expect := &SingleUnit {
+		Value: 0,
+		Mode: 1,
+	}
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
+
+	expect = &SingleUnit {
+		Value: 3,
+		Mode: 1,
+	}
+	if !reflect.DeepEqual(expect, src) {
+		t.Fatalf("expect %v, but got %v", expect, src)
+	}
 }
 
 func TestSingleUnit_Equal(t *testing.T) {
-	src := &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
+	src := &SingleUnit {
+		Value: 3,
+		Mode: 1,
+	}
+	dst := &SingleUnit {
+		Value: 3,
+		Mode: 1,
+	}
+	result := src.Equal(dst)
+	expect := true
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
+
+	dst.Value = 10
+	result = src.Equal(dst)
+	expect = false
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
+}
+
+func buildTime(min int) time.Time {
+	str := strconv.Itoa(min)
+	str += "m"
+	dur, _ := time.ParseDuration(str)
+	time := time.Now()
+	return time.Add(-dur)
+}
+
+func TestChangeIntoHeatmap(t *testing.T) {
+	matrix := &matrix.Matrix {
+		Data: [][]matrix.Value {
+			[]*SingleUnit {
+				&SingleUnit{
+					1,0,
+				},
+				&SingleUnit{
+					2,0,
+				},
+			},
+			[]*SingleUnit {
+				&SingleUnit{
+					3,0,
+				},
+				&SingleUnit{
+					4,0,
+				},
+			},
 		},
-		Average: MultiValue{
-			100, 200, 300, 400,
+		Keys: matrix.DiscreteKeys {
+			"", "a", "b",
+		},
+		Times: matrix.DiscreteTimes {
+			buildTime(-3),buildTime(-1),buildTime(0),
 		},
 	}
-	dst := src.Clone()
-	check(t, dst.(*MultiUnit), src)
+
+	expect := &Heatmap{
+		Data:[][]interface{
+			[]interface{1,2,},
+			[]interface{1,2,},
+		},
+	}
 }
 
