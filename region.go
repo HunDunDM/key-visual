@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 )
+
 const defaultRegionPath = "../storage/region"
 
 type regionInfo struct {
@@ -106,7 +107,7 @@ func (r regionUnit) BuildMultiValue() *MultiUnit {
 // here we define another Line structure different from matrix.Line
 // because that one uses a interface and cannot be encoded to json string
 type Line struct {
-	EndKey     string `json:"end_key"`
+	EndKey     string      `json:"end_key"`
 	RegionUnit *regionUnit `json:"region_unit"`
 }
 
@@ -244,10 +245,10 @@ var globalRegionStore RegionStore
 
 func init() {
 	globalRegionStore.LeveldbStorage, _ = NewLeveldbStorage(defaultRegionPath)
-	regions := []*regionInfo {
+	regions := []*regionInfo{
 		{
-			StartKey:"",
-			EndKey:"~",
+			StartKey: "",
+			EndKey:   "~",
 		},
 	}
 	// insert an empty axis, which means that from the last time the server shutdown till now the data is zero

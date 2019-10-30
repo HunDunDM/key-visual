@@ -1,25 +1,27 @@
 package main
 
 import (
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"github.com/HunDunDM/key-visual/matrix"
 	"reflect"
 	"strconv"
 	"testing"
 	"time"
-	"github.com/HunDunDM/key-visual/matrix"
 )
 
 func TestMax(t *testing.T) {
 	a := uint64(1)
 	b := uint64(2)
-	result := Max(a,b)
+	result := Max(a, b)
 	expect := b
 	if !reflect.DeepEqual(expect, result) {
 		t.Fatalf("expect %v, but got %v", expect, result)
 	}
 
 	a = uint64(3)
-	result = Max(a,b)
+	result = Max(a, b)
 	expect = a
 	if !reflect.DeepEqual(expect, result) {
 		t.Fatalf("expect %v, but got %v", expect, result)
@@ -210,6 +212,7 @@ func TestMultiUnit_Default(t *testing.T) {
 	dst := src.Default()
 	check(t, dst.(*MultiUnit), &MultiUnit{})
 }
+
 func TestMultiUnit_Equal(t *testing.T) {
 	src := &MultiUnit{
 		Max: MultiValue{
@@ -220,7 +223,11 @@ func TestMultiUnit_Equal(t *testing.T) {
 		},
 	}
 	dst := src.Clone()
-	check(t, dst.(*MultiUnit), src)
+	expect := true
+	result := src.Equal(dst)
+	if !reflect.DeepEqual(expect, result) {
+		t.Fatalf("expect %v, but got %v", expect, result)
+	}
 }
 
 /*********************************************************************************************/
@@ -230,13 +237,13 @@ func TestMultiUnit_Equal(t *testing.T) {
 func TestSingleUnit_Split(t *testing.T) {
 	src := &SingleUnit{
 		Value: 3,
-		Mode: 0,
+		Mode:  0,
 	}
 	dst := src.Split(2)
 	result := dst.(*SingleUnit)
 	expect := &SingleUnit{
 		Value: 3,
-		Mode: 0,
+		Mode:  0,
 	}
 	if !reflect.DeepEqual(expect, result) {
 		t.Fatalf("expect %v, but got %v", expect, result)
@@ -247,7 +254,7 @@ func TestSingleUnit_Split(t *testing.T) {
 	result = dst.(*SingleUnit)
 	expect = &SingleUnit{
 		Value: 1,
-		Mode: 1,
+		Mode:  1,
 	}
 	if !reflect.DeepEqual(expect, result) {
 		t.Fatalf("expect %v, but got %v", expect, result)
@@ -257,17 +264,17 @@ func TestSingleUnit_Split(t *testing.T) {
 func TestSingleUnit_Merge(t *testing.T) {
 	src := &SingleUnit{
 		Value: 3,
-		Mode: 0,
+		Mode:  0,
 	}
 	dst := &SingleUnit{
 		Value: 4,
-		Mode: 0,
+		Mode:  0,
 	}
 	src.Merge(dst)
 
 	expect := &SingleUnit{
 		Value: 4,
-		Mode: 0,
+		Mode:  0,
 	}
 	if !reflect.DeepEqual(expect, src) {
 		t.Fatalf("expect %v, but got %v", expect, src)
@@ -275,17 +282,17 @@ func TestSingleUnit_Merge(t *testing.T) {
 
 	src = &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
 	dst = &SingleUnit{
 		Value: 4,
-		Mode: 1,
+		Mode:  1,
 	}
 	src.Merge(dst)
 
 	expect = &SingleUnit{
 		Value: 7,
-		Mode: 1,
+		Mode:  1,
 	}
 	if !reflect.DeepEqual(expect, src) {
 		t.Fatalf("expect %v, but got %v", expect, src)
@@ -325,7 +332,7 @@ func TestSingleUnit_GetThreshold(t *testing.T) {
 func TestSingleUnit_Clone(t *testing.T) {
 	src := &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
 
 	dst := src.Clone()
@@ -336,7 +343,7 @@ func TestSingleUnit_Clone(t *testing.T) {
 
 	expect := &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
 	src.Value = 10
 	if reflect.DeepEqual(src, result) {
@@ -345,14 +352,14 @@ func TestSingleUnit_Clone(t *testing.T) {
 }
 
 func TestSingleUnit_Reset(t *testing.T) {
-	src := &SingleUnit {
+	src := &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
 	src.Reset()
-	expect := &SingleUnit {
+	expect := &SingleUnit{
 		Value: 0,
-		Mode: 1,
+		Mode:  1,
 	}
 	if !reflect.DeepEqual(expect, src) {
 		t.Fatalf("expect %v, but got %v", expect, src)
@@ -360,22 +367,22 @@ func TestSingleUnit_Reset(t *testing.T) {
 }
 
 func TestSingleUnit_Default(t *testing.T) {
-	src := &SingleUnit {
+	src := &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
 	result := src.Default()
-	expect := &SingleUnit {
+	expect := &SingleUnit{
 		Value: 0,
-		Mode: 1,
+		Mode:  1,
 	}
 	if !reflect.DeepEqual(expect, result) {
 		t.Fatalf("expect %v, but got %v", expect, result)
 	}
 
-	expect = &SingleUnit {
+	expect = &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
 	if !reflect.DeepEqual(expect, src) {
 		t.Fatalf("expect %v, but got %v", expect, src)
@@ -383,13 +390,13 @@ func TestSingleUnit_Default(t *testing.T) {
 }
 
 func TestSingleUnit_Equal(t *testing.T) {
-	src := &SingleUnit {
+	src := &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
-	dst := &SingleUnit {
+	dst := &SingleUnit{
 		Value: 3,
-		Mode: 1,
+		Mode:  1,
 	}
 	result := src.Equal(dst)
 	expect := true
@@ -414,39 +421,39 @@ func buildTime(min int) time.Time {
 }
 
 func TestChangeIntoHeatmap(t *testing.T) {
-	matrix := &matrix.Matrix {
-		Data: [][]matrix.Value {
-			[]matrix.Value {
+	matrix := &matrix.Matrix{
+		Data: [][]matrix.Value{
+			[]matrix.Value{
 				&SingleUnit{
-					1,0,
+					1, 0,
 				},
 				&SingleUnit{
-					2,0,
+					2, 0,
 				},
 			},
-			[]matrix.Value {
+			[]matrix.Value{
 				&SingleUnit{
-					3,0,
+					3, 0,
 				},
 				&SingleUnit{
-					4,0,
+					4, 0,
 				},
 			},
 		},
-		Keys: matrix.DiscreteKeys {
+		Keys: matrix.DiscreteKeys{
 			"", "a", "b",
 		},
-		Times: matrix.DiscreteTimes {
-			buildTime(-3),buildTime(-1),buildTime(0),
+		Times: matrix.DiscreteTimes{
+			buildTime(-3), buildTime(-1), buildTime(0),
 		},
 	}
 
 	expect := &Heatmap{
-		Data:[][]interface{}{
-			[]interface{}{1,2},
-			[]interface{}{3,4},
+		Data: [][]interface{}{
+			[]interface{}{1, 2},
+			[]interface{}{3, 4},
 		},
-		Keys:matrix.Keys,
+		Keys:  matrix.Keys,
 		Times: matrix.Times,
 	}
 
@@ -458,7 +465,7 @@ func TestChangeIntoHeatmap(t *testing.T) {
 	}
 }
 
-func  SprintfHeatmap(hmap *Heatmap) string {
+func SprintfHeatmap(hmap *Heatmap) string {
 	str := fmt.Sprintf("%v\n", hmap.Data)
 	str += fmt.Sprintf("%v\n", hmap.Times)
 	str += fmt.Sprintf("%v\n", hmap.Keys)
@@ -466,9 +473,22 @@ func  SprintfHeatmap(hmap *Heatmap) string {
 }
 
 func TestGenerateHeatmap(t *testing.T) {
+	tables.LeveldbStorage, _ = NewLeveldbStorage("../test/table")
+	defer tables.LeveldbStorage.Close()
+	table := Table{
+		"my_sql",
+		"db",
+		5,
+		map[int64]string{},
+	}
+	value, _ := json.Marshal(table)
+	var key = make([]byte, 8)
+	binary.BigEndian.PutUint64(key, uint64(table.ID))
+	tables.Save(key, value)
+
 	globalRegionStore.LeveldbStorage, _ = NewLeveldbStorage("../test/heatmap")
 	defer globalRegionStore.LeveldbStorage.Close()
-	keys := make([]string,0)
+	keys := make([]string, 0)
 	iter := globalRegionStore.LeveldbStorage.NewIterator(nil, nil)
 	for iter.Next() {
 		keys = append(keys, string(iter.Key()))
@@ -476,54 +496,132 @@ func TestGenerateHeatmap(t *testing.T) {
 	for _, key := range keys {
 		globalRegionStore.LeveldbStorage.Delete([]byte(key), nil)
 	}
-	regions := []*regionInfo {
+
+	heatmap := GenerateHeatmap(time.Now(), time.Now(), "", "~", "read_and_written_keys", "average")
+	if heatmap != nil {
+		t.Fatalf("expect %v, but got %v", nil, heatmap)
+	}
+
+	regions := []*regionInfo{
 		&regionInfo{
-			StartKey:"a",
-			EndKey:"b",
-			ReadBytes:2,
+			StartKey:     "a",
+			EndKey:       "b",
+			ReadBytes:    1,
+			ReadKeys:     2,
+			WrittenBytes: 3,
+			WrittenKeys:  4,
 		},
 		&regionInfo{
-			StartKey:"b",
-			EndKey:"d",
-			ReadBytes:3,
+			StartKey:     "b",
+			EndKey:       "d",
+			ReadBytes:    2,
+			ReadKeys:     3,
+			WrittenBytes: 4,
+			WrittenKeys:  5,
 		},
 	}
 	globalRegionStore.Append(regions)
 	time.Sleep(time.Second)
-	regions = []*regionInfo {
+	regions = []*regionInfo{
 		&regionInfo{
-			StartKey:"a",
-			EndKey:"b",
-			ReadBytes:4,
+			StartKey:     "a",
+			EndKey:       "b",
+			ReadBytes:    3,
+			ReadKeys:     4,
+			WrittenBytes: 5,
+			WrittenKeys:  6,
 		},
 		&regionInfo{
-			StartKey:"b",
-			EndKey:"d",
-			ReadBytes:5,
+			StartKey:     "b",
+			EndKey:       "d",
+			ReadBytes:    4,
+			ReadKeys:     5,
+			WrittenBytes: 6,
+			WrittenKeys:  7,
 		},
 	}
 	globalRegionStore.Append(regions)
-
-	heatmap := GenerateHeatmap(time.Now().Add(-time.Minute),time.Now(),"","~","read_bytes","max")
-	MatchTable(heatmap)
-	expect := &Heatmap{
-		Data:[][]interface{}{
-			[]interface{}{2,3},
-			[]interface{}{4,5},
-		},
-		Keys:[]string{"a", "b", "d"},
-	}
 
 	sprintf := func(hmap *Heatmap) string {
 		str := fmt.Sprintf("%v\n", hmap.Data)
 		str += fmt.Sprintf("%v\n", hmap.Keys)
 		return str
 	}
-	resultStr := sprintf(heatmap)
-	expectStr := sprintf(expect)
+
+	expect := &Heatmap{
+		Data: [][]interface{}{
+			[]interface{}{0, 1},
+			[]interface{}{2, 3},
+		},
+		Keys: []string{"a", "b", "d"},
+	}
+	tags := []string{"read_bytes", "read_keys", "written_bytes", "written_keys"}
+	modes := []string{"max", "average"}
+
+	for _, tag := range tags {
+		for a := 0; a < len(expect.Data); a++ {
+			for b := 0; b < len(expect.Data[a]); b++ {
+				expect.Data[a][b] = expect.Data[a][b].(int) + 1
+			}
+		}
+		for _, mode := range modes {
+			heatmap := GenerateHeatmap(time.Now().Add(-time.Minute), time.Now(), "", "~", tag, mode)
+			MatchTable(heatmap)
+			resultStr := sprintf(heatmap)
+			expectStr := sprintf(expect)
+			if !reflect.DeepEqual(expectStr, resultStr) {
+				t.Fatalf("expect %v, but got %v", expectStr, resultStr)
+			}
+		}
+	}
+
+	expect = &Heatmap{
+		Data: [][]interface{}{
+			[]interface{}{4, 6},
+			[]interface{}{8, 10},
+		},
+		Keys: []string{"a", "b", "d"},
+	}
+	for _, mode := range modes {
+		heatmap := GenerateHeatmap(time.Now().Add(-time.Minute), time.Now(), "", "~", "read_and_written_bytes", mode)
+		MatchTable(heatmap)
+		resultStr := sprintf(heatmap)
+		expectStr := sprintf(expect)
+		if !reflect.DeepEqual(expectStr, resultStr) {
+			t.Fatalf("expect %v, but got %v", expectStr, resultStr)
+		}
+	}
+
+	expect = &Heatmap{
+		Data: [][]interface{}{
+			[]interface{}{6, 8},
+			[]interface{}{10, 12},
+		},
+		Keys: []string{"a", "b", "d"},
+	}
+	for _, mode := range modes {
+		heatmap := GenerateHeatmap(time.Now().Add(-time.Minute), time.Now(), "", "~", "read_and_written_keys", mode)
+		MatchTable(heatmap)
+		resultStr := sprintf(heatmap)
+		expectStr := sprintf(expect)
+		if !reflect.DeepEqual(expectStr, resultStr) {
+			t.Fatalf("expect %v, but got %v", expectStr, resultStr)
+		}
+	}
+	heatmap = GenerateHeatmap(time.Now().Add(-time.Minute), time.Now(), "~", "~", "read_and_written_keys", "max")
+	if heatmap != nil {
+		t.Fatalf("expect %v, but got %v", nil, heatmap)
+	}
+
+	sprintfMulti := func(hmap *Heatmap) string {
+		str := fmt.Sprintf("%v %v\n", len(hmap.Data), len(hmap.Data[0]))
+		str += fmt.Sprintf("%v\n", hmap.Keys)
+		return str
+	}
+	heatmap = GenerateHeatmap(time.Now().Add(-time.Minute), time.Now(), "", "~", "", "max")
+	resultStr := sprintfMulti(heatmap)
+	expectStr := sprintfMulti(expect)
 	if !reflect.DeepEqual(expectStr, resultStr) {
 		t.Fatalf("expect %v, but got %v", expectStr, resultStr)
 	}
 }
-
-

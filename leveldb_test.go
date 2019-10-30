@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 )
+
 var keys = []string{
 	"aaaq325hdjjhsf",
 	"bbbczvafagsheerqatw",
@@ -19,6 +20,7 @@ var values = []string{
 	"aaaaaaaaaaaaaa",
 	"bbbbbbbbbbbb",
 }
+
 func TestNewLeveldbStorage(t *testing.T) {
 	db, err := NewLeveldbStorage("test/store/new")
 	defer db.Close()
@@ -55,7 +57,7 @@ func TestLeveldbStorage_Save(t *testing.T) {
 	}
 }
 func TestLeveldbStorage_Load(t *testing.T) {
-	db, err := leveldb.OpenFile("..test/store/save", nil)
+	db, err := leveldb.OpenFile("test/store/save", nil)
 	perr(err)
 	for i := range keys {
 		err := db.Put([]byte(keys[i]), []byte(values[i]), nil)
