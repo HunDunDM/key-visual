@@ -46,7 +46,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if endKey == "" {
 		endKey = "~" //\126
 	}
-	matrix := globalStat.RangeMatrix(startTime, endTime, startKey, endKey, tag, mode)
+	matrix := generateHeatmap(startTime, endTime, startKey, endKey, tag, mode)
 	data, _ := json.Marshal(matrix)
 	_, err := w.Write(data)
 	perr(err)
@@ -62,7 +62,7 @@ func updateStat(ctx context.Context) {
 			return
 		case <-ticker.C:
 			regions := scanRegions()
-			globalStat.Append(regions)
+			globalRegionStore.Append(regions)
 			updateTables()
 		}
 	}
@@ -82,7 +82,7 @@ func main() {
 
 	_ = http.ListenAndServe(*addr, handler)
 
+	globalRegionStore.Close()
 	// 关闭tableDb
-	globalStat.Close()
 	tables.Close()
 }

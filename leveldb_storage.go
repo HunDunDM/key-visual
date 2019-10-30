@@ -56,10 +56,11 @@ func (db *LeveldbStorage) Traversal() (allValues []string) {
 func (db *LeveldbStorage) LoadRange(startKey, endKey []byte) ([]string, []string, error) {
 	startIter := db.Search(startKey)
 	endIter := db.Search(endKey)
+
+	isEndNil := false
 	if startIter == nil {
 		return nil, nil, errors.New("startTime too late")
 	}
-	isEndNil := false
 	if endIter == nil {
 		isEndNil = true
 	}
