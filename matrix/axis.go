@@ -7,9 +7,9 @@ import (
 
 // a DiscreteAxis is an abstract of all the regionInfos collection at a certain time
 type DiscreteAxis struct {
-	StartKey string  `json:"start_key"` // the first line's startKey
-	Lines    []*Line `json:"lines"`
-	EndTime time.Time `json:"end_time"` // the last line's endTime
+	StartKey string    `json:"start_key"` // the first line's startKey
+	Lines    []*Line   `json:"lines"`
+	EndTime  time.Time `json:"end_time"` // the last line's endTime
 }
 
 type DiscreteKeys []string
@@ -104,7 +104,7 @@ func (axis *DiscreteAxis) Effect(step int, threshold uint64) uint {
 
 // squash axis at certain step and threshold
 func (axis *DiscreteAxis) Squash(step int, threshold uint64) {
-	// 步长个线段的最大值和最小值的差值小于等于阈值threshold，则可以合并
+	// if 'step' lines' differences between maximum and minimum are all less than threshold, then the axis can be merged
 	if step <= 1 {
 		return
 	}
@@ -126,7 +126,7 @@ func (axis *DiscreteAxis) Squash(step int, threshold uint64) {
 			newAxis = append(newAxis, axis.Lines[i])
 			i++
 		}
-		// 清空values
+		// clear values
 		values = make([]uint64, 0, step)
 	}
 	axis.Lines = newAxis

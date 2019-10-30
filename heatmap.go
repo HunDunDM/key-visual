@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/HunDunDM/key-visual/matrix"
 	"sort"
 	"time"
-	"github.com/HunDunDM/key-visual/matrix"
 )
 
 type Label struct {
@@ -14,10 +14,10 @@ type Label struct {
 }
 
 type Heatmap struct {
-	Data   [][]interface{} `json:"data"`      // 二维数据图
-	Keys   []string        `json:"keys"`      // 纵坐标
-	Times  []time.Time     `json:"times"`     // 横坐标
-	Labels []*Label        `json:"labels"`    // 标签信息
+	Data   [][]interface{} `json:"data"`   // two-dimensional data matrix
+	Keys   []string        `json:"keys"`   // Y-axis of heatmap
+	Times  []time.Time     `json:"times"`  // X-axis of heatmap
+	Labels []*Label        `json:"labels"` // the label information at the left of heatmap indicating tables
 }
 
 type MultiValue struct {
@@ -27,14 +27,14 @@ type MultiValue struct {
 	ReadKeys     uint64 `json:"read_keys"`
 }
 
-// 一个region信息的存储单元，需要实现matrix.Value
+// a storage unit of regionInfo, which needs to implement matrix.Value interface
 type MultiUnit struct {
-	// 同时计算平均值和最大值
+	// calculate average and maximum simultaneously
 	Max     MultiValue `json:"max"`
 	Average MultiValue `json:"average"`
 }
 
-// 返回两个数中的较大值
+// return the bigger one of two numbers
 func max(a uint64, b uint64) uint64 {
 	if a > b {
 		return a
@@ -90,18 +90,18 @@ func (v *MultiUnit) Equal(other matrix.Value) bool {
 	return *v == *another
 }
 
-// 一个单指标的统计单元，需要实现matrix.Value
+// a statistics unit of single index, which needs to implement matrix.Value interface
 type SingleUnit struct {
-	// 同时计算平均值和最大值
-	// 0表示最大值模式，1表示平均值模式
-	Value uint64   `json:"value"`
-	Mode  int      `json:"mode"`
+	// calculate average and maximum simultaneously
+	// 0 indicates maximum mode, 1 indicates average mode
+	Value uint64 `json:"value"`
+	Mode  int    `json:"mode"`
 }
 
 func (v *SingleUnit) Split(count int) matrix.Value {
 	countU64 := uint64(count)
 	res := *v
-	if v.Mode==1 {
+	if v.Mode == 1 {
 		res.Value /= countU64
 	}
 	return &res
@@ -130,13 +130,13 @@ func (v *SingleUnit) Clone() matrix.Value {
 }
 
 func (v *SingleUnit) Reset() {
-	*v = SingleUnit {
+	*v = SingleUnit{
 		Mode: v.Mode,
 	}
 }
 
 func (v *SingleUnit) Default() matrix.Value {
-	return &SingleUnit {
+	return &SingleUnit{
 		Mode: v.Mode,
 	}
 }
@@ -183,32 +183,26 @@ func generateHeatmap(startTime time.Time, endTime time.Time, startKey string, en
 	if rangePlane == nil {
 		return nil
 	}
-	//key范围上截取信息
+	// range information in key axis
 	for i := 0; i < len(rangePlane.Axes); i++ {
 		tempAxis := rangePlane.Axes[i]
-		if tempAxis != nil { // 实际应该不会出现nil的情况
+		if tempAxis != nil {
 			rangePlane.Axes[i] = tempAxis.Range(startKey, endKey)
 		}
 	}
 
-	matrix := rangePlane.Pixel(50, 80)
-	/*for i:=0; i<len(matrix.Data); i++ {
-		for j:=0; j<len(matrix.Data[i]); j++ {
-			fmt.Print(matrix.Data[i][j])
-		}
-		fmt.Println("")
-	}*/
-	heatmap := ChangeIntoHeatmap(matrix)
+	newMatrix := rangePlane.Pixel(50, 80)
+	heatmap := ChangeIntoHeatmap(newMatrix)
 	return MatchTable(heatmap)
 
 }
 
 func ChangeIntoHeatmap(matrix *matrix.Matrix) *Heatmap {
-	if matrix == nil || len(matrix.Data) == 0 || len(matrix.Data[0]) == 0{
+	if matrix == nil || len(matrix.Data) == 0 || len(matrix.Data[0]) == 0 {
 		return nil
 	}
 	heatmap := &Heatmap{
-		Keys: matrix.Keys,
+		Keys:  matrix.Keys,
 		Times: matrix.Times,
 	}
 	isMulti := true
@@ -218,20 +212,20 @@ func ChangeIntoHeatmap(matrix *matrix.Matrix) *Heatmap {
 	if isMulti {
 		n := len(matrix.Data)
 		heatmap.Data = make([][]interface{}, n)
-		for i:=0; i<n; i++ {
+		for i := 0; i < n; i++ {
 			m := len(matrix.Data[i])
 			heatmap.Data[i] = make([]interface{}, m)
-			for j:=0; j<m; j++ {
+			for j := 0; j < m; j++ {
 				heatmap.Data[i][j] = matrix.Data[i][j]
 			}
 		}
 	} else {
 		n := len(matrix.Data)
 		heatmap.Data = make([][]interface{}, n)
-		for i:=0; i<n; i++ {
+		for i := 0; i < n; i++ {
 			m := len(matrix.Data[i])
 			heatmap.Data[i] = make([]interface{}, m)
-			for j:=0; j<m; j++ {
+			for j := 0; j < m; j++ {
 				singleUnit := matrix.Data[i][j].(*SingleUnit)
 				heatmap.Data[i][j] = singleUnit.Value
 			}
@@ -240,9 +234,9 @@ func ChangeIntoHeatmap(matrix *matrix.Matrix) *Heatmap {
 	return heatmap
 }
 
-// 匹配表
+// match tables
 func MatchTable(hmap *Heatmap) *Heatmap {
-	if hmap==nil {
+	if hmap == nil {
 		return nil
 	}
 	keys := hmap.Keys
@@ -321,5 +315,3 @@ func MatchTable(hmap *Heatmap) *Heatmap {
 	}
 	return hmap
 }
-
-

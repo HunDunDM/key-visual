@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 )
+
 const defaultRegionPath = "storage/region"
 
 type regionInfo struct {
@@ -19,7 +20,6 @@ type regionInfo struct {
 	WrittenKeys  uint64 `json:"written_keys,omitempty"`
 	ReadKeys     uint64 `json:"read_keys,omitempty"`
 }
-
 
 func scanRegions() []*regionInfo {
 	var key []byte
@@ -50,9 +50,9 @@ type regionData struct {
 	ReadKeys     uint64 `json:"read_keys"`
 }
 
-// 一个region信息的存储单元，需要实现matrix.Value
+// a storage unit of region information, which needs to implement the matrix.Value interface
 type regionUnit struct {
-	// 同时计算平均值和最大值
+	// calculate average and maximum simultaneously
 	Max     regionData `json:"max"`
 	Average regionData `json:"average"`
 }
@@ -86,59 +86,59 @@ func (r regionUnit) Useless(threshold uint64) bool {
 }
 
 func (r regionUnit) BuildMultiValue() *MultiUnit {
-	max := MultiValue {
+	max := MultiValue{
 		r.Max.WrittenBytes,
 		r.Max.ReadBytes,
 		r.Max.WrittenKeys,
 		r.Max.ReadKeys,
 	}
-	average := MultiValue {
+	average := MultiValue{
 		r.Average.WrittenBytes,
 		r.Average.ReadBytes,
 		r.Average.WrittenKeys,
 		r.Average.ReadKeys,
 	}
-	return &MultiUnit {
+	return &MultiUnit{
 		max,
 		average,
 	}
 }
 
-
+// here we define another Line structure different from matrix.Line
+// because that one uses a interface and cannot be encoded to json string
 type Line struct {
-	// StartKey string // EndKey from the previous Line
-	EndKey   string `json:"end_key"`
+	EndKey     string `json:"end_key"`
 	regionUnit `json:"region_unit"`
 }
 
 type DiscreteAxis struct {
-	StartKey string  `json:"start_key"` // 第一条Line的StartKey
-	Lines    []*Line `json:"lines"`
-	// StartTime time.Time // EndTime from the previous DiscreteAxis
-	EndTime time.Time `json:"end_time"` // 该key轴的time坐标
+	StartKey string    `json:"start_key"` // the first line's StartKey
+	Lines    []*Line   `json:"lines"`
+	EndTime  time.Time `json:"end_time"` // the last line's EndTime
 }
 
-// 以指定阈值合并低于该信息量的线段
+// merge lines that have values less than threshold
+// which is like eliminate the noise point in a map
 func (axis *DiscreteAxis) DeNoise(threshold uint64) {
 	newAxis := make([]*Line, 0)
-	// value小于threshold且相邻的“线段”可以合并
-	// 相邻的且value相等的“线段”可以合并
-	isLastLess := false      //标志上一个line的value是否小于threshold
-	var lastIndex int64 = -1 //上一个线段的索引
+	// a consecutive set of lines which all have values less than threshold can be merged
+	// a consecutive set of lines which have values that are very close to each other can also be merged
+	isLastLess := false      // indicates whether the last line's value is less than threshold
+	var lastIndex int64 = -1 // the last line's index
 	for _, line := range axis.Lines {
 		if line.Useless(threshold) {
-			if isLastLess { //若前一个线段也小于阈值，做Merge操作
+			if isLastLess { // if the prior line's value is also less than threshold, do merge operation
 				newAxis[len(newAxis)-1].regionUnit.Merge(line.regionUnit)
 				newAxis[len(newAxis)-1].EndKey = line.EndKey
 			} else {
 				isLastLess = true
 				newAxis = append(newAxis, line)
 			}
-		} else { //遇到大于阈值的线段
+		} else { // when meeting a line which has value bigger than threshold
 			isLastLess = false
 			if lastIndex == -1 || line.regionUnit != axis.Lines[lastIndex].regionUnit {
 				newAxis = append(newAxis, line)
-			} else { //说明此值与上一个的值相等
+			} else { // means that this value is the same as the prior value
 				newAxis[len(newAxis)-1].regionUnit.Merge(line.regionUnit)
 				newAxis[len(newAxis)-1].EndKey = line.EndKey
 			}
@@ -148,7 +148,7 @@ func (axis *DiscreteAxis) DeNoise(threshold uint64) {
 	axis.Lines = newAxis
 }
 
-// 将regionInfo转换为key轴并插入Stat中，同时处理分层机制
+// convert the regionInfo into key axis and insert it into Stat
 func (r *RegionStore) Append(regions []*regionInfo) {
 	if len(regions) == 0 {
 		return
@@ -156,7 +156,7 @@ func (r *RegionStore) Append(regions []*regionInfo) {
 	if regions[len(regions)-1].EndKey == "" {
 		regions[len(regions)-1].EndKey = "~"
 	}
-	// 寻找第一个不为空指针的regionInfo
+	// find the first regionInfo that is not nil
 	firstIndex := 0
 	for firstIndex < len(regions) {
 		if regions[firstIndex] != nil {
@@ -168,23 +168,23 @@ func (r *RegionStore) Append(regions []*regionInfo) {
 	if firstIndex == len(regions) {
 		return
 	}
-	//先生成DiscreteAxis
+	// generate DiscreteAxis firstly
 	axis := &DiscreteAxis{
 		StartKey: regions[firstIndex].StartKey,
 		EndTime:  time.Now(),
 	}
-	//生成lines
+	// generate lines
 	for _, info := range regions {
 		if info == nil {
 			continue
 		}
 		line := &Line{
-			EndKey: info.EndKey,
-			regionUnit:  newRegionUnit(info),
+			EndKey:     info.EndKey,
+			regionUnit: newRegionUnit(info),
 		}
 		axis.Lines = append(axis.Lines, line)
 	}
-	//对lins的value小于1（即为0）的线段压缩
+	// compress those lines that have values 0
 	axis.DeNoise(1)
 
 	value, err := json.Marshal(axis)
@@ -197,8 +197,8 @@ func (r *RegionStore) Append(regions []*regionInfo) {
 	perr(err)
 }
 
-func (r *RegionStore) Range(startTime time.Time, endTime time.Time, separateValue func(r *regionUnit) matrix.Value ) *matrix.DiscretePlane {
-	//time范围上截取信息
+func (r *RegionStore) Range(startTime time.Time, endTime time.Time, separateValue func(r *regionUnit) matrix.Value) *matrix.DiscretePlane {
+	// range information in time axis
 	start := startTime.Unix()
 	end := endTime.Unix()
 	var startBuf = make([]byte, 8)
@@ -213,8 +213,6 @@ func (r *RegionStore) Range(startTime time.Time, endTime time.Time, separateValu
 	if rangeValues == nil || len(rangeValues) == 0 {
 		return nil
 	}
-
-	//fmt.Println(start," ", end, "\n");
 	var rangeTimePlane matrix.DiscretePlane
 	for _, value := range rangeValues {
 		axis := DiscreteAxis{}
@@ -238,7 +236,6 @@ func (r *RegionStore) Range(startTime time.Time, endTime time.Time, separateValu
 	return &rangeTimePlane
 }
 
-
 type RegionStore struct {
 	sync.RWMutex
 	*LeveldbStorage
@@ -249,5 +246,3 @@ var globalRegionStore RegionStore
 func init() {
 	globalRegionStore.LeveldbStorage, _ = NewLeveldbStorage(defaultRegionPath)
 }
-
-
