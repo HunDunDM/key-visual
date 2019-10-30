@@ -21,11 +21,6 @@ func encodeTablePrefix(tableID int64) string {
 	return hex.EncodeToString(raw)
 }
 
-func encodeTableIndexPrefix(tableID int64, indexID int64) string {
-	key := tablecodec.EncodeTableIndexPrefix(tableID, indexID)
-	raw := codec.EncodeBytes([]byte(nil), key)
-	return hex.EncodeToString(raw)
-}
 func newRegionInfo(start string, end string, writtenBytes uint64, writtenKeys uint64, readBytes uint64, readKeys uint64) *regionInfo {
 	return &regionInfo{
 		StartKey:     start,
@@ -37,23 +32,6 @@ func newRegionInfo(start string, end string, writtenBytes uint64, writtenKeys ui
 	}
 }
 
-func newDiscreteAxis(regions []*regionInfo) *DiscreteAxis {
-	axis := &DiscreteAxis{
-		StartKey: regions[0].StartKey,
-		EndTime:  time.Now(),
-	}
-	//生成lines
-	for _, info := range regions {
-		line := &Line{
-			EndKey: info.EndKey,
-			RegionUnit: newRegionUnit(info),
-		}
-		axis.Lines = append(axis.Lines, line)
-	}
-	//对lins的value小于1（即为0）的线段压缩
-	axis.DeNoise(1)
-	return axis
-}
 
 func TestRegionStore_Append(t *testing.T) {
 	globalRegionStore.LeveldbStorage, _ = NewLeveldbStorage(teststatpath)
