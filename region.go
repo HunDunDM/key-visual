@@ -20,7 +20,7 @@ type regionInfo struct {
 	ReadKeys     uint64 `json:"read_keys,omitempty"`
 }
 
-func scanRegions() []*regionInfo {
+func ScanRegions() []*regionInfo {
 	var key []byte
 	var err error
 	regions := make([]*regionInfo, 0, 1024)
@@ -56,20 +56,20 @@ type regionUnit struct {
 	Average regionData `json:"average"`
 }
 
-func newRegionUnit(r *regionInfo) regionUnit {
+func newRegionUnit(r *regionInfo) *regionUnit {
 	rValue := regionData{
 		WrittenBytes: r.WrittenBytes,
 		ReadBytes:    r.ReadBytes,
 		WrittenKeys:  r.WrittenKeys,
 		ReadKeys:     r.ReadKeys,
 	}
-	return regionUnit{
+	return &regionUnit{
 		Max:     rValue,
 		Average: rValue,
 	}
 }
 
-func (r regionUnit) Merge(other regionUnit) {
+func (r *regionUnit) Merge(other *regionUnit) {
 	r.Max.WrittenBytes = Max(r.Max.WrittenBytes, other.Max.WrittenBytes)
 	r.Max.WrittenKeys = Max(r.Max.WrittenKeys, other.Max.WrittenKeys)
 	r.Max.ReadBytes = Max(r.Max.ReadBytes, other.Max.ReadBytes)
@@ -107,7 +107,7 @@ func (r regionUnit) BuildMultiValue() *MultiUnit {
 // because that one uses a interface and cannot be encoded to json string
 type Line struct {
 	EndKey     string `json:"end_key"`
-	regionUnit `json:"region_unit"`
+	RegionUnit *regionUnit `json:"region_unit"`
 }
 
 type DiscreteAxis struct {
@@ -125,9 +125,9 @@ func (axis *DiscreteAxis) DeNoise(threshold uint64) {
 	isLastLess := false      // indicates whether the last line's value is less than threshold
 	var lastIndex int64 = -1 // the last line's index
 	for _, line := range axis.Lines {
-		if line.Useless(threshold) {
+		if line.RegionUnit.Useless(threshold) {
 			if isLastLess { // if the prior line's value is also less than threshold, do merge operation
-				newAxis[len(newAxis)-1].regionUnit.Merge(line.regionUnit)
+				newAxis[len(newAxis)-1].RegionUnit.Merge(line.RegionUnit)
 				newAxis[len(newAxis)-1].EndKey = line.EndKey
 			} else {
 				isLastLess = true
@@ -135,10 +135,10 @@ func (axis *DiscreteAxis) DeNoise(threshold uint64) {
 			}
 		} else { // when meeting a line which has value bigger than threshold
 			isLastLess = false
-			if lastIndex == -1 || line.regionUnit != axis.Lines[lastIndex].regionUnit {
+			if lastIndex == -1 || line.RegionUnit != axis.Lines[lastIndex].RegionUnit {
 				newAxis = append(newAxis, line)
 			} else { // means that this value is the same as the prior value
-				newAxis[len(newAxis)-1].regionUnit.Merge(line.regionUnit)
+				newAxis[len(newAxis)-1].RegionUnit.Merge(line.RegionUnit)
 				newAxis[len(newAxis)-1].EndKey = line.EndKey
 			}
 		}
@@ -179,7 +179,7 @@ func (r *RegionStore) Append(regions []*regionInfo) {
 		}
 		line := &Line{
 			EndKey:     info.EndKey,
-			regionUnit: newRegionUnit(info),
+			RegionUnit: newRegionUnit(info),
 		}
 		axis.Lines = append(axis.Lines, line)
 	}
@@ -221,7 +221,7 @@ func (r *RegionStore) Range(startTime time.Time, endTime time.Time, separateValu
 		for i, v := range axis.Lines {
 			lines[i] = &matrix.Line{
 				EndKey: v.EndKey,
-				Value:  separateValue(&v.regionUnit),
+				Value:  separateValue(v.RegionUnit),
 			}
 		}
 		newAxis := matrix.DiscreteAxis{
@@ -245,11 +245,11 @@ var globalRegionStore RegionStore
 func init() {
 	globalRegionStore.LeveldbStorage, _ = NewLeveldbStorage(defaultRegionPath)
 	regions := []*regionInfo {
-		&regionInfo{
+		{
 			StartKey:"",
 			EndKey:"~",
 		},
 	}
-	//插入一条空轴，表示将上次关闭服务器时刻到此时开机的时刻的数据置为0
+	// insert an empty axis, which means that from the last time the server shutdown till now the data is zero
 	globalRegionStore.Append(regions)
 }

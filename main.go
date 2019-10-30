@@ -61,7 +61,7 @@ func updateStat(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			regions := scanRegions()
+			regions := ScanRegions()
 			globalRegionStore.Append(regions)
 			updateTables()
 		}

@@ -223,30 +223,30 @@ func TestMultiUnit_Equal(t *testing.T) {
 /* test SingleUnit */
 /*********************************************************************************************/
 
-func TestSingleUnit_Split(t *testing.T) {
-	src := &SingleUnit{
-		Value: 3,
-		Mode: 0,
-	}
-	dst := src.Split(2)
-	check(t, dst.(*MultiUnit), &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			50, 100, 150, 200,
-		},
-	})
-	dst = src.Split(5)
-	check(t, dst.(*MultiUnit), &MultiUnit{
-		Max: MultiValue{
-			10, 20, 30, 40,
-		},
-		Average: MultiValue{
-			20, 40, 60, 80,
-		},
-	})
-}
+//func TestSingleUnit_Split(t *testing.T) {
+//	src := &SingleUnit{
+//		Value: 3,
+//		Mode: 0,
+//	}
+//	dst := src.Split(2)
+//	check(t, dst.(*MultiUnit), &MultiUnit{
+//		Max: MultiValue{
+//			10, 20, 30, 40,
+//		},
+//		Average: MultiValue{
+//			50, 100, 150, 200,
+//		},
+//	})
+//	dst = src.Split(5)
+//	check(t, dst.(*MultiUnit), &MultiUnit{
+//		Max: MultiValue{
+//			10, 20, 30, 40,
+//		},
+//		Average: MultiValue{
+//			20, 40, 60, 80,
+//		},
+//	})
+//}
 func TestSingleUnit_Merge(t *testing.T) {
 	src := &MultiUnit{
 		Max: MultiValue{
