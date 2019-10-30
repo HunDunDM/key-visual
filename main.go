@@ -46,7 +46,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if endKey == "" {
 		endKey = "~" // \126, which is the biggest displayable character
 	}
-	matrix := generateHeatmap(startTime, endTime, startKey, endKey, tag, mode)
+	matrix := GenerateHeatmap(startTime, endTime, startKey, endKey, tag, mode)
 	data, _ := json.Marshal(matrix)
 	_, err := w.Write(data)
 	perr(err)

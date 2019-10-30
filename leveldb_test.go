@@ -55,7 +55,7 @@ func TestLeveldbStorage_Save(t *testing.T) {
 	}
 }
 func TestLeveldbStorage_Load(t *testing.T) {
-	db, err := leveldb.OpenFile("test/store/save", nil)
+	db, err := leveldb.OpenFile("..test/store/save", nil)
 	perr(err)
 	for i := range keys {
 		err := db.Put([]byte(keys[i]), []byte(values[i]), nil)
