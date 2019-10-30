@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 )
-const defaultRegionPath = "storage/region"
+const defaultRegionPath = "../storage/region"
 
 type regionInfo struct {
 	ID           uint64 `json:"id"`
@@ -71,10 +71,10 @@ func newRegionUnit(r *regionInfo) regionUnit {
 }
 
 func (r regionUnit) Merge(other regionUnit) {
-	r.Max.WrittenBytes = max(r.Max.WrittenBytes, other.Max.WrittenBytes)
-	r.Max.WrittenKeys = max(r.Max.WrittenKeys, other.Max.WrittenKeys)
-	r.Max.ReadBytes = max(r.Max.ReadBytes, other.Max.ReadBytes)
-	r.Max.ReadKeys = max(r.Max.ReadKeys, other.Max.ReadKeys)
+	r.Max.WrittenBytes = Max(r.Max.WrittenBytes, other.Max.WrittenBytes)
+	r.Max.WrittenKeys = Max(r.Max.WrittenKeys, other.Max.WrittenKeys)
+	r.Max.ReadBytes = Max(r.Max.ReadBytes, other.Max.ReadBytes)
+	r.Max.ReadKeys = Max(r.Max.ReadKeys, other.Max.ReadKeys)
 	r.Average.WrittenBytes = r.Average.WrittenBytes + other.Average.WrittenBytes
 	r.Average.WrittenKeys = r.Average.WrittenKeys + other.Average.WrittenKeys
 	r.Average.ReadBytes = r.Average.ReadBytes + other.Average.ReadBytes
@@ -82,7 +82,7 @@ func (r regionUnit) Merge(other regionUnit) {
 }
 
 func (r regionUnit) Useless(threshold uint64) bool {
-	return max(r.Max.ReadBytes, r.Max.WrittenBytes) < threshold
+	return Max(r.Max.ReadBytes, r.Max.WrittenBytes) < threshold
 }
 
 func (r regionUnit) BuildMultiValue() *MultiUnit {
@@ -207,9 +207,8 @@ func (r *RegionStore) Range(startTime time.Time, endTime time.Time, separateValu
 	binary.BigEndian.PutUint64(endBuf, uint64(end))
 
 	r.RLock()
-	_, rangeValues, err := r.LoadRange(startBuf, endBuf)
+	_, rangeValues, _ := r.LoadRange(startBuf, endBuf)
 	r.RUnlock()
-	perr(err)
 	if rangeValues == nil || len(rangeValues) == 0 {
 		return nil
 	}
@@ -235,6 +234,7 @@ func (r *RegionStore) Range(startTime time.Time, endTime time.Time, separateValu
 		}
 		rangeTimePlane.Axes = append(rangeTimePlane.Axes, &newAxis)
 	}
+	rangeTimePlane.StartTime = rangeTimePlane.Axes[0].EndTime.Add(-*interval)
 	return &rangeTimePlane
 }
 
@@ -248,6 +248,14 @@ var globalRegionStore RegionStore
 
 func init() {
 	globalRegionStore.LeveldbStorage, _ = NewLeveldbStorage(defaultRegionPath)
+	regions := []*regionInfo {
+		&regionInfo{
+			StartKey:"",
+			EndKey:"~",
+		},
+	}
+	//插入一条空轴，表示将上次关闭服务器时刻到此时开机的时刻的数据置为0
+	globalRegionStore.Append(regions)
 }
 
 

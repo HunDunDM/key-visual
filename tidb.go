@@ -3,12 +3,11 @@ package main
 import (
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"sync"
 )
 
-const defaulttablePath = "storage/table"
+const defaulttablePath = "../storage/table"
 
 // Table saves the info of a table
 type Table struct {
@@ -17,10 +16,6 @@ type Table struct {
 	ID   int64  `json:"id"`
 
 	Indices map[int64]string `json:"indices"`
-}
-
-func (t *Table) String() string {
-	return fmt.Sprintf("%s.%s", t.DB, t.Name)
 }
 
 // TableSlice is the slice of tables
