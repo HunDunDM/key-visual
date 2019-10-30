@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
 	"time"
+	"github.com/HunDunDM/key-visual/matrix"
 )
 
 func TestMax(t *testing.T) {
@@ -414,7 +416,7 @@ func buildTime(min int) time.Time {
 func TestChangeIntoHeatmap(t *testing.T) {
 	matrix := &matrix.Matrix {
 		Data: [][]matrix.Value {
-			[]*SingleUnit {
+			[]matrix.Value {
 				&SingleUnit{
 					1,0,
 				},
@@ -422,7 +424,7 @@ func TestChangeIntoHeatmap(t *testing.T) {
 					2,0,
 				},
 			},
-			[]*SingleUnit {
+			[]matrix.Value {
 				&SingleUnit{
 					3,0,
 				},
@@ -440,10 +442,88 @@ func TestChangeIntoHeatmap(t *testing.T) {
 	}
 
 	expect := &Heatmap{
-		Data:[][]interface{
-			[]interface{1,2,},
-			[]interface{1,2,},
+		Data:[][]interface{}{
+			[]interface{}{1,2},
+			[]interface{}{3,4},
 		},
+		Keys:matrix.Keys,
+		Times: matrix.Times,
+	}
+
+	result := ChangeIntoHeatmap(matrix)
+	expectStr := SprintfHeatmap(expect)
+	resultStr := SprintfHeatmap(result)
+	if !reflect.DeepEqual(expectStr, resultStr) {
+		t.Fatalf("expect %v, but got %v", expectStr, resultStr)
 	}
 }
+
+func  SprintfHeatmap(hmap *Heatmap) string {
+	str := fmt.Sprintf("%v\n", hmap.Data)
+	str += fmt.Sprintf("%v\n", hmap.Times)
+	str += fmt.Sprintf("%v\n", hmap.Keys)
+	return str
+}
+
+func TestGenerateHeatmap(t *testing.T) {
+	globalRegionStore.LeveldbStorage, _ = NewLeveldbStorage("../test/heatmap")
+	defer globalRegionStore.LeveldbStorage.Close()
+	keys := make([]string,0)
+	iter := globalRegionStore.LeveldbStorage.NewIterator(nil, nil)
+	for iter.Next() {
+		keys = append(keys, string(iter.Key()))
+	}
+	for _, key := range keys {
+		globalRegionStore.LeveldbStorage.Delete([]byte(key), nil)
+	}
+	regions := []*regionInfo {
+		&regionInfo{
+			StartKey:"a",
+			EndKey:"b",
+			ReadBytes:2,
+		},
+		&regionInfo{
+			StartKey:"b",
+			EndKey:"d",
+			ReadBytes:3,
+		},
+	}
+	globalRegionStore.Append(regions)
+	time.Sleep(time.Second)
+	regions = []*regionInfo {
+		&regionInfo{
+			StartKey:"a",
+			EndKey:"b",
+			ReadBytes:4,
+		},
+		&regionInfo{
+			StartKey:"b",
+			EndKey:"d",
+			ReadBytes:5,
+		},
+	}
+	globalRegionStore.Append(regions)
+
+	heatmap := GenerateHeatmap(time.Now().Add(-time.Minute),time.Now(),"","~","read_bytes","max")
+	MatchTable(heatmap)
+	expect := &Heatmap{
+		Data:[][]interface{}{
+			[]interface{}{2,3},
+			[]interface{}{4,5},
+		},
+		Keys:[]string{"a", "b", "d"},
+	}
+
+	sprintf := func(hmap *Heatmap) string {
+		str := fmt.Sprintf("%v\n", hmap.Data)
+		str += fmt.Sprintf("%v\n", hmap.Keys)
+		return str
+	}
+	resultStr := sprintf(heatmap)
+	expectStr := sprintf(expect)
+	if !reflect.DeepEqual(expectStr, resultStr) {
+		t.Fatalf("expect %v, but got %v", expectStr, resultStr)
+	}
+}
+
 

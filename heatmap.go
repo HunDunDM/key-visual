@@ -146,7 +146,7 @@ func (v *SingleUnit) Equal(other matrix.Value) bool {
 	return *v == *another
 }
 
-func generateHeatmap(startTime time.Time, endTime time.Time, startKey string, endKey string, tag, mode string) *Heatmap {
+func GenerateHeatmap(startTime time.Time, endTime time.Time, startKey string, endKey string, tag, mode string) *Heatmap {
 	separateValue := func(unit *regionUnit) matrix.Value {
 		var m int
 		switch mode {
@@ -155,7 +155,6 @@ func generateHeatmap(startTime time.Time, endTime time.Time, startKey string, en
 		default:
 			m = 0
 		}
-
 		var data uint64
 		switch tag {
 		case "read_bytes":
