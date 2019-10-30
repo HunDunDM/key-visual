@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 )
+
 var keys = []string{
 	"aaaq325hdjjhsf",
 	"bbbczvafagsheerqatw",
@@ -19,6 +20,7 @@ var values = []string{
 	"aaaaaaaaaaaaaa",
 	"bbbbbbbbbbbb",
 }
+
 func TestNewLeveldbStorage(t *testing.T) {
 	db, err := NewLeveldbStorage("test/store/new")
 	defer db.Close()

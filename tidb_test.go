@@ -6,23 +6,25 @@ import (
 	"testing"
 	"time"
 )
+
 const testtablepath = "../test/table"
+
 func TestUpdateAndLoadTables(t *testing.T) {
-		time.Sleep(time.Second)
-		tables.LeveldbStorage, _ = NewLeveldbStorage(testtablepath)
-		updateTables()
-		tablesBefore := loadTables()
-		tables.Close()
-		db, err := leveldb.OpenFile(testtablepath, nil)
-		perr(err)
-		tables.LeveldbStorage = &LeveldbStorage{db}
+	time.Sleep(time.Second)
+	tables.LeveldbStorage, _ = NewLeveldbStorage(testtablepath)
+	updateTables()
+	tablesBefore := loadTables()
+	tables.Close()
+	db, err := leveldb.OpenFile(testtablepath, nil)
+	perr(err)
+	tables.LeveldbStorage = &LeveldbStorage{db}
 
-		tablesAfter := loadTables()
+	tablesAfter := loadTables()
 
-		if !reflect.DeepEqual(tablesBefore, tablesAfter) {
-			t.Fatalf("expect\n%v\nbut got\n%v", tablesBefore, tablesAfter)
-		}
-		tables.LeveldbStorage.Close()
+	if !reflect.DeepEqual(tablesBefore, tablesAfter) {
+		t.Fatalf("expect\n%v\nbut got\n%v", tablesBefore, tablesAfter)
+	}
+	tables.LeveldbStorage.Close()
 }
 
 func TestTableSlice_Len(t *testing.T) {
