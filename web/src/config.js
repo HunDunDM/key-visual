@@ -19,17 +19,17 @@ export const dataPreferenceEnum = {
   load: {
     display: 'Load',
     value: 'load',
-    func: value => value.read_bytes + value.written_bytes,
+    func: value => value.value,
   },
   read: {
     display: 'Read',
     value: 'read',
-    func: value => value.read_bytes,
+    func: value => value.value,
   },
   write: {
     display: 'Write',
     value: 'write',
-    func: value => value.written_bytes,
+    func: value => value.value,
   },
 };
 
