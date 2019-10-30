@@ -132,6 +132,48 @@ func (axis *DiscreteAxis) Squash(step int, threshold uint64) {
 	axis.Lines = newAxis
 }
 
+// 二分阈值的方式，压缩axis，让Bucket的个数尽量接近m
+func (axis *DiscreteAxis) BinaryCompress(m int) {
+	//对key轴压缩
+	if m == 0 {
+		return
+	}
+	if len(axis.Lines) > m {
+		//压缩处理，将key轴line的个数压缩到接近m
+		thresholdSet := make(map[uint64]struct{}, len(axis.Lines))
+		//去重
+		for _, line := range axis.Lines {
+			thresholdSet[line.GetThreshold()] = struct{}{}
+		}
+
+		thresholds := axis.GenerateThresholds()
+		// 步长向上取整
+		step := len(axis.Lines) / m
+		if step*m != len(axis.Lines) {
+			step++
+		}
+		//二分查找
+		i := sort.Search(len(thresholds), func(i int) bool {
+			return axis.Effect(step, thresholds[i]) <= uint(m)
+		})
+
+		//取最相近的
+		threshold1 := thresholds[i]
+		num1 := axis.Effect(step, threshold1)
+		if i > 0 && num1 != uint(m) {
+			threshold2 := thresholds[i-1]
+			num2 := axis.Effect(step, threshold2)
+			if (int(num2) - m) < (m - int(num1)) {
+				axis.Squash(step, threshold2)
+			} else {
+				axis.Squash(step, threshold1)
+			}
+		} else {
+			axis.Squash(step, threshold1)
+		}
+	}
+}
+
 // 以指定的离散Key序列重采样,
 // 只采样line，时间不采样
 // dst的划分至少和axis一样细

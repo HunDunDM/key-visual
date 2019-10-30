@@ -34,8 +34,8 @@ type MultiUnit struct {
 	Average MultiValue `json:"average"`
 }
 
-// return the bigger one of two numbers
-func max(a uint64, b uint64) uint64 {
+// 返回两个数中的较大值
+func Max(a uint64, b uint64) uint64 {
 	if a > b {
 		return a
 	}
@@ -54,10 +54,10 @@ func (v *MultiUnit) Split(count int) matrix.Value {
 
 func (v *MultiUnit) Merge(other matrix.Value) {
 	v2 := other.(*MultiUnit)
-	v.Max.WrittenBytes = max(v.Max.WrittenBytes, v2.Max.WrittenBytes)
-	v.Max.WrittenKeys = max(v.Max.WrittenKeys, v2.Max.WrittenKeys)
-	v.Max.ReadBytes = max(v.Max.ReadBytes, v2.Max.ReadBytes)
-	v.Max.ReadKeys = max(v.Max.ReadKeys, v2.Max.ReadKeys)
+	v.Max.WrittenBytes = Max(v.Max.WrittenBytes, v2.Max.WrittenBytes)
+	v.Max.WrittenKeys = Max(v.Max.WrittenKeys, v2.Max.WrittenKeys)
+	v.Max.ReadBytes = Max(v.Max.ReadBytes, v2.Max.ReadBytes)
+	v.Max.ReadKeys = Max(v.Max.ReadKeys, v2.Max.ReadKeys)
 	v.Average.WrittenBytes = v.Average.WrittenBytes + v2.Average.WrittenBytes
 	v.Average.WrittenKeys = v.Average.WrittenKeys + v2.Average.WrittenKeys
 	v.Average.ReadBytes = v.Average.ReadBytes + v2.Average.ReadBytes
@@ -65,11 +65,11 @@ func (v *MultiUnit) Merge(other matrix.Value) {
 }
 
 func (v *MultiUnit) Useless(threshold uint64) bool {
-	return max(v.Max.ReadBytes, v.Max.WrittenBytes) < threshold
+	return Max(v.Max.ReadBytes, v.Max.WrittenBytes) < threshold
 }
 
 func (v *MultiUnit) GetThreshold() uint64 {
-	return max(v.Max.ReadBytes, v.Max.WrittenBytes)
+	return Max(v.Max.ReadBytes, v.Max.WrittenBytes)
 }
 
 func (v *MultiUnit) Clone() matrix.Value {
@@ -110,7 +110,7 @@ func (v *SingleUnit) Split(count int) matrix.Value {
 func (v *SingleUnit) Merge(other matrix.Value) {
 	v2 := other.(*SingleUnit)
 	if v.Mode == 0 {
-		v.Value = max(v.Value, v2.Value)
+		v.Value = Max(v.Value, v2.Value)
 	} else {
 		v.Value = v.Value + v2.Value
 	}

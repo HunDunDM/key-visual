@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 )
-const testtablepath = "test/table"
+const testtablepath = "../test/table"
 func TestUpdateAndLoadTables(t *testing.T) {
 	tables.LeveldbStorage, _ = NewLeveldbStorage(testtablepath)
 	updateTables()

@@ -16,8 +16,8 @@ var (
 	pdAddr = flag.String("pd", "http://172.16.4.191:8010", "PD address")
 	// TiDB Server address
 	tidbAddr = flag.String("tidb", "http://172.16.4.191:10080", "TiDB Address")
-	// the default interval between two data requests
-	interval = flag.Duration("I", time.Minute, "Interval to collect metrics")
+	//interval
+	interval  = flag.Duration("I", 10*time.Second, "Interval to collect metrics")
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {

@@ -98,14 +98,15 @@ func (plane *DiscretePlane) Compact() (axis *DiscreteAxis, startTime time.Time) 
 	return axis, startTime
 }
 
-// 给定推荐值n、m，将稀疏平面像素化为近似n*m的矩阵
-func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
-	newPlane := DiscretePlane{
-		StartTime: plane.StartTime,
-	}
-	if n == 0 || m == 0 {
+// 时间轴上压缩成n个
+func (plane *DiscretePlane) TimesSquash(n int) *DiscretePlane {
+	if n==0 {
 		return nil
 	}
+	newPlane := &DiscretePlane{
+		StartTime: plane.StartTime,
+	}
+
 	//时间轴上，均分压缩
 	if len(plane.Axes) >= n {
 		//压缩分为两部走，前一部分step较大（大1），后一部分step较小
@@ -132,8 +133,7 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 			}
 			tempPlane.Axes = make([]*DiscreteAxis, step)
 			for i := 0; i < step; i++ {
-				// 克隆数据，防止对原始数据修改
-				tempPlane.Axes[i] = plane.Axes[index+i].Clone()
+				tempPlane.Axes[i] = plane.Axes[index+i]
 			}
 			axis, _ := tempPlane.Compact()
 
@@ -143,53 +143,29 @@ func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
 	} else {
 		newPlane.Axes = make([]*DiscreteAxis, len(plane.Axes))
 		for i := 0; i < len(plane.Axes); i++ {
-			// 克隆数据，防止对原始数据修改
-			newPlane.Axes[i] = plane.Axes[i].Clone()
+			newPlane.Axes[i] = plane.Axes[i]
 		}
 	}
+	return newPlane
+}
+
+// 给定推荐值n、m，将稀疏平面像素化为近似n*m的矩阵
+func (plane *DiscretePlane) Pixel(n int, m int) *Matrix {
+	if n == 0 || m == 0 {
+		return nil
+	}
+	//时间轴上压缩
+	newPlane := plane.TimesSquash(n)
 
 	//生成统一的key轴
 	axis, _ := newPlane.Compact()
-	//对key轴压缩
-	if len(axis.Lines) > m {
-		//压缩处理，将key轴line的个数压缩到接近m
-		thresholdSet := make(map[uint64]struct{}, len(axis.Lines))
-		//去重
-		for _, line := range axis.Lines {
-			thresholdSet[line.GetThreshold()] = struct{}{}
-		}
-
-		thresholds := axis.GenerateThresholds()
-		// 步长向上取整
-		step := len(axis.Lines) / m
-		if step*m != len(axis.Lines) {
-			step++
-		}
-		//二分查找
-		i := sort.Search(len(thresholds), func(i int) bool {
-			return axis.Effect(step, thresholds[i]) <= uint(m)
-		})
-
-		//取最相近的
-		threshold1 := thresholds[i]
-		num1 := axis.Effect(step, threshold1)
-		if i > 0 && num1 != uint(m) {
-			threshold2 := thresholds[i-1]
-			num2 := axis.Effect(step, threshold2)
-			if (int(num2) - m) < (m - int(num1)) {
-				axis.Squash(step, threshold2)
-			} else {
-				axis.Squash(step, threshold1)
-			}
-		} else {
-			axis.Squash(step, threshold1)
-		}
-	}
+	axis.BinaryCompress(m)
 
 	//重置目标轴的value为0值
 	for i := 0; i < len(axis.Lines); i++ {
 		axis.Lines[i].Reset()
 	}
+	// 依次对各个轴做投影
 	for i := 0; i < len(newPlane.Axes); i++ {
 		axisClone := axis.Clone()
 		newPlane.Axes[i].DeProjection(axisClone)
